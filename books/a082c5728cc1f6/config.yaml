@@ -6,7 +6,7 @@ summary: |-
 topics: []
 published: false
 price: 0
-arrow_override: true
+allow_override: true
 toc_depth: 2
 chapters:
   - "fc7fd7"
