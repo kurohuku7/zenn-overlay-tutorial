@@ -9,12 +9,12 @@ price: 0
 allow_override: true
 toc_depth: 2
 chapters:
-  - "fc7fd7"
-  - "21c9a8"
-  - "d10fc4"
-  - "44fc55"
-  - "493cc9"
-  - "6871ec"
-  - "3c77b8"
-  - "22f4fb"
-  - "17df9d"
+  - "introduction"
+  - "project-setup"
+  - "openvr"
+  - "create-overlay"
+  - "overlay-position"
+  - "timer"
+  - "interaction"
+  - "dashboard"
+  - "help"
