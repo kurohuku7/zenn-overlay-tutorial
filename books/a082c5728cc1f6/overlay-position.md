@@ -3,23 +3,51 @@ title: "オーバーレイの表示位置と大きさ"
 free: false
 ---
 
-## オーバーレイの表示位置
 Overlay Viewer 上で画像が表示されていることを確認できましたが、肝心の HMD には何も表示されていません。
-
 オーバーレイは VR 空間のどこにどのくらいの大きさで表示するかを指定する必要があります。
 早速オーバーレイの表示場所を指定して、VR 内で確認できるようにしてみましょう。
 
+## オーバーレイの大きさ
+まずはオーバーレイの大きさを設定します。
+大きさは SetOverlayWidthinMeters() で設定できます。
+オーバーレイの幅を m 単位で指定します。高さは表示する画像のアスペクト比に合わせて自動的に計算されます。
+今回は正方形の画像をサンプルで使用しているため、縦横同サイズとなります。
+とりあえず幅 1m に設定してみましょう。
 
-サイズ、回転
-これだけで一章に分けた方がいい。できるだけ小分けにするとわかりやすい。
+```cs:FileOverlay.cs
+private void Start()
+{        
+    InitOpenVR();
+    overlayHandle = CreateOverlay("FileOverlayKey", "FileOverlay");
 
-## レンダーテクスチャの準備
-Unity はカメラの映像をレンダーテクスチャとして書き出すことができるので、これを使ってみましょう。
+    var filePath = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg");
+    SetOverlayFromFile(overlayHandle, filePath);
 
-### オーバーレイの設定
-オーバーレイを表示する時、いくつかの設定があります。
++    var error = OpenVR.Overlay.SetOverlayWidthInMeters(overlayHandle, 1);
++    if (error != EVROverlayError.None)
++    {
++        throw new Exception("オーバーレイのサイズ設定に失敗しました: " + error);
++    }
+}
+```
 
-例えばオーバーレイは空中の特定の座標に固定して表示しておくのか、コントローラや HMD などのデバイスにくっつけておきたいのかなどです。
+Wiki はこちら
+https://github.com/ValveSoftware/openvr/wiki/IVROverlay::SetOverlayWidthInMeters
+
+SteamVR Plugin はこちら
+https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.CVROverlay.html#Valve_VR_CVROverlay_SetOverlayWidthInMeters_System_UInt64_System_Single_
+
+
+## オーバーレイの表示位置
+次にオーバーレイの表示位置を設定します。
+表示位置は SteamVR のプレイエリアの原点（床の中心）を基準とする SetOverlayTransform() と、HMD やコントローラの位置を基準とする SetOverlayTransformTrackedDeviceRelative() があります。
+空間の特定の位置に固定するか、コントローラや HMD に追従させるかによって使い分けます。
+最初は絶対座標で、空間の特定の場所に固定で表示してみましょう。
+
+位置の指定は 3DCG では同じもの変換行列によって行われます。
+引数には座標を変換するための行列 HmdMatrix を与えます。
+
+
 
 ### 空間に固定で出してみる
 まずは絶対座標で空間に固定で表示してみましょう。
