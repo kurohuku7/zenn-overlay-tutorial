@@ -60,7 +60,6 @@ public class FileOverlay : MonoBehaviour
 +        if (OpenVR.System != null)
 +        {
 +            Debug.Log("OpenVR は既に初期化されています");
-+            return;
 +        }
 +        var initError = EVRInitError.None;
 +        OpenVR.Init(ref initError, EVRApplicationType.VRApplication_Overlay);
@@ -171,6 +170,14 @@ public class FileOverlay : MonoBehaviour
 -       Debug.Log(OpenVR.Overlay);
     }
 
+    private void OnDestroy()
+    {
+        if (OpenVR.System != null)
+        {
+            OpenVR.Shutdown();
+        }
+    }
+
 +    private void InitOpenVR()
 +    {
 +        if (OpenVR.System == null)
@@ -183,16 +190,53 @@ public class FileOverlay : MonoBehaviour
 +            }
 +        }
 +    }
+}
+```
+
+同様にクリーンアップ処理も ShutdownOpenVR() として関数に分けておきます。
+```diff cs:FileOverlay.cs
+using UnityEngine;
+using Valve.VR;
+
+public class FileOverlay : MonoBehaviour
+{
+    private void Start()
+    {
+       InitOpenVR();
+    }
 
     private void OnDestroy()
     {
-        if (OpenVR.System != null)
+-        if (OpenVR.System != null)
+-        {
+-            OpenVR.Shutdown();
+-        }
++        ShutdownOpenVR();
+    }
+
+    private void InitOpenVR()
+    {
+        if (OpenVR.System == null)
         {
-            OpenVR.Shutdown();
+            var initError = EVRInitError.None;
+            OpenVR.Init(ref initError, EVRApplicationType.VRApplication_Overlay);
+            if (initError != EVRInitError.None)
+            {
+                throw new Exception("OpenVRの初期化に失敗しました: " + initError);
+            }
         }
     }
+
++    private void ShutdownOpenVR();
++    {
++        if (OpenVR.System != null)
++        {
++            OpenVR.Shutdown();
++        }
++    }
 }
 ```
+
 
 オーバーレイは [CreateOverlay()](https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.CVROverlay.html#Valve_VR_CVROverlay_CreateOverlay_System_String_System_String_System_UInt64__) で作成します。[Wiki](https://github.com/ValveSoftware/openvr/wiki/IVROverlay::CreateOverlay) に詳しい説明が乗っています。
 OpenVR の初期化に続けて、下記のコードを追加します。
@@ -232,6 +276,7 @@ pOverlayHandle は作成したオーバーレイのハンドルを保存する u
 作成したオーバーレイはアプリケーション終了時に破棄していなければゴミが残ります。
 DestroyOverlay() を OnDestroy() に追加して、終了時にオーバーレイを破棄します。
 CreateOverlay() 時に取得したハンドルを保存して、DestroyOverlay() に渡します。
+アプリケーションの終了時までハンドルを保存しておくため、変数 overlayHandle は private フィールドとして保存しておくようにします。
 
 ```diff cs:FileOverlay.cs
 using UnityEngine;
@@ -245,14 +290,22 @@ public class FileOverlay : MonoBehaviour
     {
        InitOpenVR();
 
--        var overlayHandle = OpenVR.k_ulOverlayHandleInvalid;
-        var key = "FileOverlayKey";
-        var name = "FileOverlay";
-        var error = OpenVR.Overlay.CreateOverlay(key, name, ref overlayHandle);
+-       var overlayHandle = OpenVR.k_ulOverlayHandleInvalid;
+        var error = OpenVR.Overlay.CreateOverlay("FileOverlayKey", "FileOverlay", ref overlayHandle);
         if (error != EVROverlayError.None)
         {
             throw new Exception("オーバーレイの作成に失敗しました: " + error);
         }
+    }
+
+    private void OnDestroy()
+    {
++        if (overlayHandle != OpenVR.k_ulOverlayHandleInvalid)
++        {
++            OpenVR.Overlay.DestroyOverlay(overlayHandle);
++        }
+
+        ShutdownOpenVR();
     }
 
     private void InitOpenVR()
@@ -268,13 +321,8 @@ public class FileOverlay : MonoBehaviour
         }
     }
 
-    private void OnDestroy()
+    private void ShutdownOpenVR();
     {
-+        if (overlayHandle != OpenVR.k_ulOverlayHandleInvalid)
-+        {
-+            OpenVR.Overlay.DestroyOverlay(overlayHandle);
-+        }
-
         if (OpenVR.System != null)
         {
             OpenVR.Shutdown();
@@ -302,8 +350,80 @@ Overlay Viewer の左上の一覧に、先ほど指定したキー FileOverlayKe
 :::message
 Overlay Viewer の実行ファイルは、Steam のインストールディレクトリに入っています。
 デフォルトの場合は "C:\Program Files (x86)\Steam\steamapps\common\SteamVR\bin\win32\overlay_viewer.exe" です。
-何度も起動することになるので、タスクバーにショートカットを作成しておくのがおすすめです。
+何度も起動することになるので、ショートカットを作成しておくのがおすすめです。
 :::
+
+次へ進む前にオーバーレイの作成と破棄を関数に分けて整理しておきます。
+
+```diff cs:FileOverlay.cs
+using UnityEngine;
+using Valve.VR;
+
+public class FileOverlay : MonoBehaviour
+{
+    private ulong overlayHandle = OpenVR.k_ulOverlayHandleInvalid;
+
+    private void Start()
+    {
+       InitOpenVR();
+
+-       var error = OpenVR.Overlay.CreateOverlay("FileOverlayKey", "FileOverlay", ref overlayHandle);
+-       if (error != EVROverlayError.None)
+-       {
+-           throw new Exception("オーバーレイの作成に失敗しました: " + error);
+-       }
++       overlayHandle = CreateOverlay("FileOverlayKey", "FileOverlay");
+    }
+
+    private void OnDestroy()
+    {
+-        if (overlayHandle != OpenVR.k_ulOverlayHandleInvalid)
+-        {
+-            OpenVR.Overlay.DestroyOverlay(overlayHandle);
+-        }
++        DestroyOverlay(overlayHandle);
+        ShutdownOpenVR();
+    }
+
+    private void InitOpenVR()
+    {
+        if (OpenVR.System == null)
+        {
+            var initError = EVRInitError.None;
+            OpenVR.Init(ref initError, EVRApplicationType.VRApplication_Overlay);
+            if (initError != EVRInitError.None)
+            {
+                throw new Exception("OpenVRの初期化に失敗しました: " + initError);
+            }
+        }
+    }
+
+    private void ShutdownOpenVR();
+    {
+        if (OpenVR.System != null)
+        {
+            OpenVR.Shutdown();
+        }
+    }
+
++    private ulong CreateOverlay(string key, string name) {
++        var handle = OpenVR.k_ulOverlayHandleInvalid;
++        var error = OpenVR.Overlay.CreateOverlay(key, name, ref handle);
++        if (error != EVROverlayError.None)
++        {
++            throw new Exception("オーバーレイの作成に失敗しました: " + error);
++        }
++        return handle;
++    }
+
++    private void DestroyOverlay(ulong handle) {
++        if (handle != OpenVR.k_ulOverlayHandleInvalid)
++        {
++            OpenVR.Overlay.DestroyOverlay(handle);
++        }
++    }
+}
+```
 
 ### 画像ファイルの準備
 オーバーレイに画像を描画してみましょう。
@@ -332,15 +452,10 @@ ulOverlayHandle は CreateOerlay() で取得したハンドル、pchFilePath は
 void Start()
 {
     InitOpenVR();
-    
-    var error = OpenVR.Overlay.CreateOverlay("FileOverlayKey", "FileOverlayName", ref overlayHandle);
-    if (error != EVROverlayError.None)
-    {
-        throw new Exception("オーバーレイの作成に失敗しました: " + error);
-    }
-        
+    overlayHandle = CreateOverlay("FileOverlayKey", "FileOverlay");
+
 +    var file = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg");
-+    error = OpenVR.Overlay.SetOverlayFromFile(overlayHandle, filePath);
++    var error = OpenVR.Overlay.SetOverlayFromFile(overlayHandle, filePath);
 +    if (error != EVROverlayError.None)
 +    {
 +        throw new Exception("画像ファイルの描画に失敗しました: " + error);
@@ -355,8 +470,117 @@ void Start()
 正常に動作していれば、プレビュー部分に画像が表示されているはずです。
 ![](https://storage.googleapis.com/zenn-user-upload/c7cc3e4edf39-20240306.png)
 
-ここまでのコードを一旦整理しておきます。
+Overlay Viewer 上で画像が表示されていることを確認できましたが、肝心の HMD には何も表示されていません。
+オーバーレイは VR 空間での表示位置や大きさを指定する必要があります。
+次のページで表示位置の設定する前に、一旦コードを整理しておきましょう。
+
+画像ファイルの表示も関数にして分けておきます。
+
 
 ```diff cs:FileOverlay.cs
 
+void Start()
+{
+   InitOpenVR();
+   overlayHandle = CreateOverlay("FileOverlayKey", "FileOverlay");
+
++    var filePath = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg")
++    SetOverlayFromFile(overlayHandle, filePath);
+
+-    var file = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg");
+-    var error = OpenVR.Overlay.SetOverlayFromFile(overlayHandle, filePath);
+-    if (error != EVROverlayError.None)
+-    {
+-        throw new Exception("画像ファイルの描画に失敗しました: " + error);
+-    }
+}
+
+...
+
+private void SetOverlayFromFile(ulong handle, string path)
+{
+    var error = OpenVR.Overlay.SetOverlayFromFile(handle, path);
+    if (error != EVROverlayError.None)
+    {
+        throw new Exception("画像ファイルの描画に失敗しました: " + error);
+    }
+}
+```
+
+最終的なスクリプトは下記の通りです。
+```cs:FileOverlay.cs
+using System;
+using UnityEngine;
+using Valve.VR;
+
+public class FileOverlay : MonoBehaviour
+{
+    private ulong overlayHandle = OpenVR.k_ulOverlayHandleInvalid;
+
+    private void Start()
+    {        
+        InitOpenVR();
+        overlayHandle = CreateOverlay("FileOverlayKey", "FileOverlay");
+
+        var filePath = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg");
+        SetOverlayFromFile(overlayHandle, filePath);
+    }
+    
+    private void OnDestroy()
+    {
+        DestroyOverlay(overlayHandle);
+        ShutdownOpenVR();
+    }
+
+    private void InitOpenVR()
+    {
+        if (OpenVR.System != null)
+        {
+            Debug.Log("OpenVR は既に初期化されています");
+            return;
+        }
+
+        var initError = EVRInitError.None;
+        OpenVR.Init(ref initError, EVRApplicationType.VRApplication_Overlay);
+        if (initError != EVRInitError.None)
+        {
+            throw new Exception("OpenVRの初期化に失敗しました: " + initError);
+        }
+    }
+
+    private void ShutdownOpenVR()
+    {
+        if (OpenVR.System != null)
+        {
+            OpenVR.Shutdown();
+        }
+    }
+    
+    private ulong CreateOverlay(string key, string name)
+    {
+        var handle = OpenVR.k_ulOverlayHandleInvalid;
+        var error = OpenVR.Overlay.CreateOverlay(key, name, ref handle);
+        if (error != EVROverlayError.None)
+        { 
+            throw new Exception("オーバーレイの作成に失敗しました: " + error);
+        }
+        return handle;
+    }
+
+    private void DestroyOverlay(ulong handle)
+    {
+        if (handle != OpenVR.k_ulOverlayHandleInvalid)
+        {
+            OpenVR.Overlay.DestroyOverlay(handle);
+        }
+    }
+    private void SetOverlayFromFile(ulong handle, string path)
+    {
+        var error = OpenVR.Overlay.SetOverlayFromFile(handle, path);
+        if (error != EVROverlayError.None)
+        {
+            throw new Exception("画像ファイルの描画に失敗しました: " + error);
+        }
+    }
+}
 ```
