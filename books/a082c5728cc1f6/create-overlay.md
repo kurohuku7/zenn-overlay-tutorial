@@ -425,6 +425,39 @@ public class FileOverlay : MonoBehaviour
 }
 ```
 
+### オーバーレイの表示状態の変更
+オーバーレイはデフォルトで非表示状態になっているため、表示状態に切り替える必要があります。
+表示状態の切り替えは ShowOverlay() と HideOverlay() で行います。
+
+```cs
+ShowOverlay(ulong ulOverlayHandle)
+HideOverlay(ulong ulOverlayHandle)
+```
+
+Wiki
+https://github.com/ValveSoftware/openvr/wiki/IVROverlay::ShowOverlay
+
+SteamVR Unity Plugin
+https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.CVROverlay.html#Valve_VR_CVROverlay_ShowOverlay_System_UInt64_
+https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.CVROverlay.html#Valve_VR_CVROverlay_HideOverlay_System_UInt64_
+
+Start() にオーバーレイの表示を追加します。
+
+```diff cs:FileOverlay.cs
+private void Start()
+{
+    InitOpenVR();
+    overlayHandle = CreateOverlay("FileOverlayKey", "FileOverlay");
+
++    var error = OpenVR.Overlay.ShowOverlay(overlayHandle);
++    if (error != EVROverlayError.None)
++    {
++        throw new Exception("オーバーレイの表示に失敗しました: " + error);
++    }
+}
+```
+
+
 ### 画像ファイルの準備
 オーバーレイに画像を描画してみましょう。
 画像はなんでもいいですが、ここでは自分のアイコンを使ってみます。
@@ -444,7 +477,7 @@ public EVROverlayError SetOverlayFromFile(ulong ulOverlayHandle, string pchFileP
 ```
 
 ulOverlayHandle は CreateOerlay() で取得したハンドル、pchFilePath は画像ファイルパスです。
-戻り地は CreateOverlay() と同様に EVROverlayError 型で、エラーがなければ EVROverlayError.None となります。
+戻り値は CreateOverlay() と同様に EVROverlayError 型で、エラーがなければ EVROverlayError.None となります。
 
 早速使ってみましょう。
 
@@ -454,14 +487,19 @@ void Start()
     InitOpenVR();
     overlayHandle = CreateOverlay("FileOverlayKey", "FileOverlay");
 
+    var error = OpenVR.Overlay.ShowOverlay(overlayHandle);
+    if (error != EVROverlayError.None)
+    {
+        throw new Exception("オーバーレイの表示に失敗しました: " + error);
+    }
+
 +    var file = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg");
-+    var error = OpenVR.Overlay.SetOverlayFromFile(overlayHandle, filePath);
++    error = OpenVR.Overlay.SetOverlayFromFile(overlayHandle, filePath);
 +    if (error != EVROverlayError.None)
 +    {
 +        throw new Exception("画像ファイルの描画に失敗しました: " + error);
 +    }
-+}
-...
+}
 ```
 
 画像を [StreamingAssets](https://docs.unity3d.com/Manual/StreamingAssets.html) フォルダに入れたのは、[Application.streamingAssetsPath](https://docs.unity3d.com/ScriptReference/Application-streamingAssetsPath.html) で画像ファイルパスを取得するためです。
@@ -470,23 +508,35 @@ void Start()
 正常に動作していれば、プレビュー部分に画像が表示されているはずです。
 ![](https://storage.googleapis.com/zenn-user-upload/c7cc3e4edf39-20240306.png)
 
-Overlay Viewer 上で画像が表示されていることを確認できましたが、肝心の HMD には何も表示されていません。
-オーバーレイは VR 空間での表示位置や大きさを指定する必要があります。
-次のページで表示位置の設定する前に、一旦コードを整理しておきましょう。
 
-画像ファイルの表示も関数にして分けておきます。
+そのまま HMD を装着して、足元を確認してください。
+プレイエリアの中心にオーバーレイが表示されているはずです。オーバーレイは裏側から見ると透明になるので、見えない場合は反対側に回り込んでみてください。
+
+![](/images/file-overlay-in-vr.jpg)
+
+
+VR 空間内へのオーバーレイの表示ができました。
+次は、オーバーレイの表示位置や大きさを変更してみます。
+その前に、一旦コードを整理しておきましょう。
+
+
+オーバーレイの表示や画像ファイルの描画を関数にして分けておきます。
 
 
 ```diff cs:FileOverlay.cs
-
 void Start()
 {
-   InitOpenVR();
-   overlayHandle = CreateOverlay("FileOverlayKey", "FileOverlay");
+    InitOpenVR();
+    overlayHandle = CreateOverlay("FileOverlayKey", "FileOverlay");
++    ShowOverlay(overlayHandle);
+-    var error = OpenVR.Overlay.ShowOverlay(overlayHandle);
+-    if (error != EVROverlayError.None)
+-    {
+-        throw new Exception("オーバーレイの表示に失敗しました: " + error);
+-    }
 
 +    var filePath = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg")
 +    SetOverlayFromFile(overlayHandle, filePath);
-
 -    var file = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg");
 -    var error = OpenVR.Overlay.SetOverlayFromFile(overlayHandle, filePath);
 -    if (error != EVROverlayError.None)
@@ -497,14 +547,23 @@ void Start()
 
 ...
 
-private void SetOverlayFromFile(ulong handle, string path)
-{
-    var error = OpenVR.Overlay.SetOverlayFromFile(handle, path);
-    if (error != EVROverlayError.None)
-    {
-        throw new Exception("画像ファイルの描画に失敗しました: " + error);
-    }
-}
++ private void ShowOverlay(ulong handle)
++ {
++     var error = OpenVR.Overlay.ShowOverlay(handle);
++     if (error != EVROverlayError.None)
++     {
++         throw new Exception("オーバーレイの表示に失敗しました: " + error);
++     }
++ }
+
++ private void SetOverlayFromFile(ulong handle, string path)
++ {
++     var error = OpenVR.Overlay.SetOverlayFromFile(handle, path);
++     if (error != EVROverlayError.None)
++     {
++         throw new Exception("画像ファイルの描画に失敗しました: " + error);
++     }
++ }
 ```
 
 最終的なスクリプトは下記の通りです。
@@ -521,6 +580,7 @@ public class FileOverlay : MonoBehaviour
     {        
         InitOpenVR();
         overlayHandle = CreateOverlay("FileOverlayKey", "FileOverlay");
+        ShowOverlay(overlayHandle);
 
         var filePath = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg");
         SetOverlayFromFile(overlayHandle, filePath);
@@ -574,6 +634,16 @@ public class FileOverlay : MonoBehaviour
             OpenVR.Overlay.DestroyOverlay(handle);
         }
     }
+
+    private void ShowOverlay(ulong handle)
+    {
+        var error = OpenVR.Overlay.ShowOverlay(handle);
+        if (error != EVROverlayError.None)
+        {
+            throw new Exception("オーバーレイの表示に失敗しました: " + error);
+        }
+    }
+
     private void SetOverlayFromFile(ulong handle, string path)
     {
         var error = OpenVR.Overlay.SetOverlayFromFile(handle, path);

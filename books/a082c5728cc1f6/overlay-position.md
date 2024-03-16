@@ -14,7 +14,7 @@ Overlay Viewer 上で画像が表示されていることを確認できまし�
 今回は正方形の画像をサンプルで使用しているため、縦横同サイズとなります。
 とりあえず幅 1m に設定してみましょう。
 
-```cs:FileOverlay.cs
+```diff cs:FileOverlay.cs
 private void Start()
 {        
     InitOpenVR();
@@ -41,12 +41,42 @@ https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.CVROverlay.htm
 ## オーバーレイの表示位置
 次にオーバーレイの表示位置を設定します。
 表示位置は SteamVR のプレイエリアの原点（床の中心）を基準とする SetOverlayTransform() と、HMD やコントローラの位置を基準とする SetOverlayTransformTrackedDeviceRelative() があります。
+
+* SetOverlayTransformTrackedDeviceComponent もある
+
 空間の特定の位置に固定するか、コントローラや HMD に追従させるかによって使い分けます。
 最初は絶対座標で、空間の特定の場所に固定で表示してみましょう。
 
 位置の指定は 3DCG では同じもの変換行列によって行われます。
 引数には座標を変換するための行列 HmdMatrix を与えます。
 
+Wiki
+https://github.com/ValveSoftware/openvr/wiki/IVROverlay::SetOverlayTransformAbsolute
+
+SteamVR Plugin
+https://github.com/ValveSoftware/openvr/wiki/IVROverlay::SetOverlayTransformAbsolute
+
+```cs
+EVROverlayError SetOverlayTransformAbsolute(ulong ulOverlayHandle, ETrackingUniverseOrigin eTrackingOrigin, ref HmdMatrix34_t pmatTrackingOriginToOverlayTransform)
+```
+
+
+`ulOverlayHandle` は CreateOverlay() で作成したオーバーレイのハンドルです。
+
+`ETrackingUniverseOrigin etrackingOrigin` はトラッキングの基準になる原点です。
+`ETrackingUniverseOrigin.TrackingStanding` が SteamVR のプレイエリアの床の中心が原点となります。今回はこちらを使います。
+`ETrackingUniverseOrigin.TrackingUniverseSeated` はユーザが座った状態でポジションをリセットした HMD の位置が原点になります。
+
+SteamVR Unity Plugin
+https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.ETrackingUniverseOrigin.html
+
+
+`HmdMatrix34_t pmatTrackingOriginToOverlayTransform` が変換行列です。
+直接行列の各要素を指定して作成することもできますが、SteamVR Unity Plugin に position (Vector3) と rotation (Quarternion) から HmdMatrix34_t の変換行列を作るユーティリティが入っているので、今回はこちらを使います。
+
+```diff cs:FileOverlay.cs
+
+```
 
 
 ### 空間に固定で出してみる
