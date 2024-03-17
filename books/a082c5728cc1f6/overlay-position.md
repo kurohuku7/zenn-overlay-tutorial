@@ -3,33 +3,15 @@ title: "オーバーレイの表示位置と大きさ"
 free: false
 ---
 
-Overlay Viewer 上で画像が表示されていることを確認できましたが、肝心の HMD には何も表示されていません。
-オーバーレイは VR 空間のどこにどのくらいの大きさで表示するかを指定する必要があります。
-早速オーバーレイの表示場所を指定して、VR 内で確認できるようにしてみましょう。
+オーバーレイは VR 空間のどこにどのくらいの大きさで表示するかを指定できます。
+
 
 ## オーバーレイの大きさ
-まずはオーバーレイの大きさを設定します。
+まずはオーバーレイの大きさを変更してみます。
 大きさは SetOverlayWidthinMeters() で設定できます。
 オーバーレイの幅を m 単位で指定します。高さは表示する画像のアスペクト比に合わせて自動的に計算されます。
 今回は正方形の画像をサンプルで使用しているため、縦横同サイズとなります。
 とりあえず幅 1m に設定してみましょう。
-
-```diff cs:FileOverlay.cs
-private void Start()
-{        
-    InitOpenVR();
-    overlayHandle = CreateOverlay("FileOverlayKey", "FileOverlay");
-
-    var filePath = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg");
-    SetOverlayFromFile(overlayHandle, filePath);
-
-+    var error = OpenVR.Overlay.SetOverlayWidthInMeters(overlayHandle, 1);
-+    if (error != EVROverlayError.None)
-+    {
-+        throw new Exception("オーバーレイのサイズ設定に失敗しました: " + error);
-+    }
-}
-```
 
 Wiki はこちら
 https://github.com/ValveSoftware/openvr/wiki/IVROverlay::SetOverlayWidthInMeters
@@ -38,11 +20,35 @@ SteamVR Plugin はこちら
 https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.CVROverlay.html#Valve_VR_CVROverlay_SetOverlayWidthInMeters_System_UInt64_System_Single_
 
 
+オーバーレイの横幅を 0.5 m にしてみます。
+
+```diff cs:FileOverlay.cs
+private void Start()
+{        
+    InitOpenVR();
+    overlayHandle = CreateOverlay("FileOverlayKey", "FileOverlay");
+    ShowOverlay(overlayHandle);
+
+    var filePath = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg");
+    SetOverlayFromFile(overlayHandle, filePath);
+
++    var error = OpenVR.Overlay.SetOverlayWidthInMeters(overlayHandle, 0.5f);
++    if (error != EVROverlayError.None)
++    {
++        throw new Exception("オーバーレイのサイズ設定に失敗しました: " + error);
++    }
+}
+```
+
+先程よりも小さくオーバーレイが表示されます。（デフォルトでは 1m で表示されます。）
+![](/images/small-overlay.jpg)
+
+
+
 ## オーバーレイの表示位置
 次にオーバーレイの表示位置を設定します。
 表示位置は SteamVR のプレイエリアの原点（床の中心）を基準とする SetOverlayTransform() と、HMD やコントローラの位置を基準とする SetOverlayTransformTrackedDeviceRelative() があります。
-
-* SetOverlayTransformTrackedDeviceComponent もある
+TODO: SetOverlayTransformTrackedDeviceComponent もある
 
 空間の特定の位置に固定するか、コントローラや HMD に追従させるかによって使い分けます。
 最初は絶対座標で、空間の特定の場所に固定で表示してみましょう。
