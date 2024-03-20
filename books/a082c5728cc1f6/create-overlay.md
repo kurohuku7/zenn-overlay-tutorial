@@ -337,7 +337,7 @@ SteamVR に同梱されている Overlay Viewer を使って、実際にオー�
 SteamVR のウィンドウの左上のメニューから Developer > Overlay Viewer を選択します。
 ![](https://storage.googleapis.com/zenn-user-upload/ca13bcee2bec-20240306.png)
 
-Overlay Viewer では、現在 SteamVR 上に作成されたすべてのオーバーレイを確認できます。SteamVR のシステムメニューなどもオーバーレイで表示されていることがわかります。
+Overlay Viewer では、SteamVR 上に作成されているすべてのオーバーレイを確認できます。SteamVR のシステムメニューなどもオーバーレイで表示されていることがわかります。
 ![](https://storage.googleapis.com/zenn-user-upload/af20c02e2a1b-20240306.png)
 
 この状態でプログラムを実行してみましょう。
@@ -345,12 +345,12 @@ Overlay Viewer の左上の一覧に、先ほど指定したキー FileOverlayKe
 クリックすると、左下にオーバーレイの詳細が表示されますね。
 ![](https://storage.googleapis.com/zenn-user-upload/b4d02e627428-20240306.png)
 
-右側の灰色はオーバーレイの描画内容が表示されますが、今は何も描画していないので灰色です。
+右側の灰色はオーバーレイの描画内容が表示されますが、今は何も描画していない状態です。
 
 :::message
 Overlay Viewer の実行ファイルは、Steam のインストールディレクトリに入っています。
 デフォルトの場合は "C:\Program Files (x86)\Steam\steamapps\common\SteamVR\bin\win32\overlay_viewer.exe" です。
-何度も起動することになるので、ショートカットを作成しておくのがおすすめです。
+何度も起動することになるので、ショートカットを作成しておくと便利です。
 :::
 
 次へ進む前にオーバーレイの作成と破棄を関数に分けて整理しておきます。
@@ -487,18 +487,18 @@ void Start()
     InitOpenVR();
     overlayHandle = CreateOverlay("FileOverlayKey", "FileOverlay");
 
-    var error = OpenVR.Overlay.ShowOverlay(overlayHandle);
-    if (error != EVROverlayError.None)
-    {
-        throw new Exception("オーバーレイの表示に失敗しました: " + error);
-    }
-
 +    var file = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg");
 +    error = OpenVR.Overlay.SetOverlayFromFile(overlayHandle, filePath);
 +    if (error != EVROverlayError.None)
 +    {
 +        throw new Exception("画像ファイルの描画に失敗しました: " + error);
 +    }
+
+    var error = OpenVR.Overlay.ShowOverlay(overlayHandle);
+    if (error != EVROverlayError.None)
+    {
+        throw new Exception("オーバーレイの表示に失敗しました: " + error);
+    }
 }
 ```
 
@@ -516,7 +516,7 @@ void Start()
 
 
 ![](/images/overlay-in-game.jpg)
-*ゲームの起動中でも動きます*
+*ゲームの起動中でも動きます。画像は [Legendary Tales](https://store.steampowered.com/app/1465070/Legendary_Tales/)。*
 
 VR 空間内へのオーバーレイの表示ができました。次は、オーバーレイの表示位置や大きさを変更してみます。
 その前に、一旦コードを整理しておきましょう。
@@ -529,12 +529,6 @@ void Start()
 {
     InitOpenVR();
     overlayHandle = CreateOverlay("FileOverlayKey", "FileOverlay");
-+    ShowOverlay(overlayHandle);
--    var error = OpenVR.Overlay.ShowOverlay(overlayHandle);
--    if (error != EVROverlayError.None)
--    {
--        throw new Exception("オーバーレイの表示に失敗しました: " + error);
--    }
 
 +    var filePath = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg")
 +    SetOverlayFromFile(overlayHandle, filePath);
@@ -543,6 +537,13 @@ void Start()
 -    if (error != EVROverlayError.None)
 -    {
 -        throw new Exception("画像ファイルの描画に失敗しました: " + error);
+-    }
+
++    ShowOverlay(overlayHandle);
+-    var error = OpenVR.Overlay.ShowOverlay(overlayHandle);
+-    if (error != EVROverlayError.None)
+-    {
+-        throw new Exception("オーバーレイの表示に失敗しました: " + error);
 -    }
 }
 
@@ -581,10 +582,11 @@ public class FileOverlay : MonoBehaviour
     {        
         InitOpenVR();
         overlayHandle = CreateOverlay("FileOverlayKey", "FileOverlay");
-        ShowOverlay(overlayHandle);
 
         var filePath = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg");
         SetOverlayFromFile(overlayHandle, filePath);
+
+        ShowOverlay(overlayHandle);
     }
     
     private void OnDestroy()
