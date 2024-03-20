@@ -516,7 +516,7 @@ void Start()
 
 
 ![](/images/overlay-in-game.jpg)
-*ゲームの起動中でも動きます。画像は [Legendary Tales](https://store.steampowered.com/app/1465070/Legendary_Tales/)。*
+*ゲームの起動中でも動作する。画像は [Legendary Tales](https://store.steampowered.com/app/1465070/Legendary_Tales/)。*
 
 VR 空間内へのオーバーレイの表示ができました。次は、オーバーレイの表示位置や大きさを変更してみます。
 その前に、一旦コードを整理しておきましょう。

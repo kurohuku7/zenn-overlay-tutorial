@@ -115,7 +115,7 @@ private void Start()
 ![](/images/far-overlay-position.jpg)
 *床から高さ 2m、正面方向に 3m、Z 軸周りに 45 度回転*
 
-位置指定処理を関数に分けて整理しておきます。
+一旦、サイズと位置の処理を関数に分けて整理しておきます。
 
 ```diff cs:FileOverlay.cs
 public class FileOverlay : MonoBehaviour
@@ -183,7 +183,7 @@ public class FileOverlay : MonoBehaviour
 
 #### HMD を基準にする
 HMD やコントローラなどのデバイスを基準とした相対的な位置指定ができます。
-常にユーザの正面に表示したり、コントローラにくっつける場合はこちらを使います。
+常にユーザの正面に表示したり、コントローラにくっつけることができます。
 
 相対位置の指定では関数 SetOverlayTransformTrackedDeviceRelative() を使用します。
 
@@ -196,11 +196,303 @@ https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.CVROverlay.htm
 どのデバイスを基準にするかは、デバイスを識別するための番号で指定します。
 HMD の場合は `OpenVR.k_unTrackedDeviceIndex_Hmd` の定数で定義されていて 0 で固定です。
 
+https://github.com/ValveSoftware/openvr/blob/master/headers/openvr.h#L251-L256
+
+https://github.com/ValveSoftware/openvr/blob/master/headers/openvr_api.cs#L7706-L7709
 
 
-leftIndex = system.GetTrackedDeviceIndexForControllerRole(ETrackedControllerRole.LeftHand);
-rightIndex = system.GetTrackedDeviceIndexForControllerRole(ETrackedControllerRole.RightHand);
+HMD の正面 2m 先にオーバーレイを表示してみます。
 
+```diff cs:FileOverlay.cs
+private void Start()
+{
+    InitOpenVR();
+    overlayHandle = CreateOverlay("FileOverlayKey", "FileOverlay");
+    SetOverlaySize(overlayHandle, 0.5f);
+
+-    var position = new Vector3(0, 2, 3);
+-    var rotation = Quaternion.Euler(0, 0, 45);
+-    SetOverlayTransformAbsolute(overlayHandle, position, rotation);
+
++    var position = new Vector3(0, 0, 2);
++    var rotation = Quaternion.Euler(0, 0, 0);
++    var rigidTransform = new SteamVR_Utils.RigidTransform(position, rotation);
++    var matrix = rigidTransform.ToHmdMatrix34();
++    var error = OpenVR.Overlay.SetOverlayTransformTrackedDeviceRelative(overlayHandle, OpenVR.k_unTrackedDeviceIndex_Hmd, ref matrix);
++    if (error != EVROverlayError.None)
++    {
++        throw new Exception("オーバーレイの位置設定に失敗しました: " + error);
++    }
+
+    var filePath = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg");
+    SetOverlayFromFile(overlayHandle, filePath);
+    
+    ShowOverlay(overlayHandle);
+} 
+```
+
+![](/images/relative-transform-hmd.gif)
+*HMD に追従するオーバーレイ*
+
+:::message
+Unity は左手系、OpenVR は右手系で座標系が異なります。
+OpenVR では +y が上、+x が右、-z が前方です。
+
+SteamVR Unity Plugin のユーティリティが座標系を変換してくれているため +z を前方として指定していますが、自前で変換行列を作る場合には z 軸が逆向きになる点に注意してください。
+:::
 
 #### コントローラを基準にする
 
+同様に SetOverlayTransformTrackedDeviceRelative() にコントローラの DevceIndex を与えれば、コントローラの位置を基準にした位置指定ができます。
+コントローラの DeviceIndex は GetTrackedDeviceIndexForControllerRole() で取得できます。
+コントローラが接続されていない場合など、取得に失敗すると k_unTrackedDeviceIndexInvalid が返ってきます。
+
+https://github.com/ValveSoftware/openvr/blob/v2.2.3/headers/openvr.h#L2336-L2337
+
+https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.CVRSystem.html#Valve_VR_CVRSystem_GetTrackedDeviceIndexForControllerRole_Valve_VR_ETrackedControllerRole_
+
+左手の場合は ETrackedControllerRole.LeftHand, 右手の場合は EtrackedControllerRole.RightHand を渡します。
+ここでは左手に表示してみます。
+
+https://github.com/ValveSoftware/openvr/blob/v2.2.3/headers/openvr.h#L272-L282
+
+https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.ETrackedControllerRole.html
+
+先程の HMD の代わりに、左手のコントローラの番号を取得して、コントローラに追従させてみます。
+
+```diff cs:FileOverlay.cs
+private void Start()
+{
+    InitOpenVR();
+    overlayHandle = CreateOverlay("FileOverlayKey", "FileOverlay");
+    SetOverlaySize(overlayHandle, 0.5f);
+
++    var leftControllerIndex = OpenVR.System.GetTrackedDeviceIndexForControllerRole(ETrackedControllerRole.LeftHand);
++    if (leftControllerIndex == OpenVR.k_unTrackedDeviceIndexInvalid)
++    {
++        Debug.Log("左手のコントローラが接続されていません");
++        return;
++    }
+    
+    var position = new Vector3(0, 0, 2);
+    var rotation = Quaternion.Euler(0, 0, 0);
+    var rigidTransform = new SteamVR_Utils.RigidTransform(position, rotation);
+    var matrix = rigidTransform.ToHmdMatrix34();
+-    var error = OpenVR.Overlay.SetOverlayTransformTrackedDeviceRelative(overlayHandle, OpenVR.k_unTrackedDeviceIndex_Hmd, ref matrix);
++    var error = OpenVR.Overlay.SetOverlayTransformTrackedDeviceRelative(overlayHandle, leftControllerIndex, ref matrix);
+    if (error != EVROverlayError.None)
+    {
+        throw new Exception("オーバーレイの位置設定に失敗しました: " + error);
+    }
+
+    var filePath = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg");
+    SetOverlayFromFile(overlayHandle, filePath);
+    
+    ShowOverlay(overlayHandle);
+}
+```
+
+SteamVR 上で左手のコントローラが接続されていることを確認してからプログラムを実行してください。HMD の代わりにコントローラに追従してオーバーレイが表示されます。
+![](/images/left-controller-connected.png)
+
+
+![](/images/controller-tracked-overlay.gif)
+*コントローラに追従するオーバーレイ*
+
+左手にコントローラを持った状態でプログラムを実行して、ちょうどいい大きさと位置になるようにインスペクタで値を調整します。
+
+
+#### 位置の調整
+
+時計アプリを作るため、手首の丁度いい位置にオーバーレイが来るように調整します。
+プログラムの実行中に Unity のインスペクタを使って実際の位置や大きさを確認しながら調整できるようにしてみます。
+
+大きさ、位置、角度をインスペクタから変更できるようにします。
+Rande() 属性でスライダーを使えるようにします。
+
+```diff cs:FileOverlay.cs
+public class FileOverlay : MonoBehaviour
+{
+    private ulong overlayHandle = OpenVR.k_ulOverlayHandleInvalid;
+
++    [Range(0, 0.5f)] public float size = 0.5f;
++    [Range(-0.5f, 0.5f)] public float x;
++    [Range(-0.5f, 0.5f)] public float y;
++    [Range(-0.5f, 0.5f)] public float z;
++    [Range(0, 360)] public int rotationX;
++    [Range(0, 360)] public int rotationY;
++    [Range(0, 360)] public int rotationZ;
+
+...
+```
+![](/images/inspector-overlay-position.png)
+
+
+サイズと位置をインスペクタの値で更新します。
+```diff cs:FileOverlay.cs
+private void Start()
+{
+    InitOpenVR();
+    overlayHandle = CreateOverlay("FileOverlayKey", "FileOverlay");
+-    SetOverlaySize(overlayHandle, 0.5f);
++    SetOverlaySize(overlayHandle, size);
+
+    var leftControllerIndex = OpenVR.System.GetTrackedDeviceIndexForControllerRole(ETrackedControllerRole.LeftHand);
+    if (leftControllerIndex == OpenVR.k_unTrackedDeviceIndexInvalid)
+    {
+        Debug.Log("左手のコントローラが接続されていません");
+        return;
+    }
+
+-    var position = new Vector3(0, 0, 2);
+-    var rotation = Quaternion.Euler(0, 0, 0);
++    var position = new Vector3(x, y, z);
++    var rotation = Quaternion.Euler(rotationX, rotationY, rotationZ); 
+    var rigidTransform = new SteamVR_Utils.RigidTransform(position, rotation);
+    var matrix = rigidTransform.ToHmdMatrix34();
+    var error = OpenVR.Overlay.SetOverlayTransformTrackedDeviceRelative(overlayHandle, leftControllerIndex, ref matrix);
+    if (error != EVROverlayError.None)
+    {
+        throw new Exception("オーバーレイの位置設定に失敗しました: " + error);
+    }
+
+    var filePath = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg");
+    SetOverlayFromFile(overlayHandle, filePath);
+
+    ShowOverlay(overlayHandle);
+}
+```
+
+実行中に値を変更できるようにするため、Update() を追加して、サイズ指定、コントローラ取得、位置指定のコードをコピーします。
+これはオーバーレイの表示位置を調整するためのもので、調整後に削除するコードです。
+```diff cs:FileOverlay.cs
++private void Update()
++{
++    SetOverlaySize(overlayHandle, size);
++
++    var leftControllerIndex = OpenVR.System.GetTrackedDeviceIndexForControllerRole(ETrackedControllerRole.LeftHand);
++    if (leftControllerIndex == OpenVR.k_unTrackedDeviceIndexInvalid)
++    {
++        Debug.Log("左手のコントローラが接続されていません");
++        return;
++    }
++    
++    var position = new Vector3(x, y, z);
++    var rotation = Quaternion.Euler(rotationX, rotationY, rotationZ); 
++    var rigidTransform = new SteamVR_Utils.RigidTransform(position, rotation);
++    var matrix = rigidTransform.ToHmdMatrix34();
++    var error = OpenVR.Overlay.SetOverlayTransformTrackedDeviceRelative(overlayHandle, leftControllerIndex, ref matrix);
++    if (error != EVROverlayError.None)
++    {
++        throw new Exception("オーバーレイの位置設定に失敗しました: " + error);
++    }
++}
+```
+
+プログラムを実行した状態でスライダーを操作して、ちょうどいい位置にオーバーレイが来るように調整してください。
+
+SteamVR のダッシュボードを開き、デスクトップ画面を表示して、VR 内から直接 Unity のスライダーを操作すると調整しやすいかと思います。
+![](/images/steamvr-dashboard-unity-window.jpg)
+![](/images/adjust-in-vr.gif)
+*SteamVR ダッシュボードから Unity を操作*
+
+他には SteamVR のメニューから Display VR View で HMD の映像を表示することもできます。
+![](/images/display-overlay-view-menu.png)
+![](/images/adjust-with-vrview.gif)
+*VR View を使った確認*
+
+調整できたら、**プログラムを終了させずに**インスペクタの各パラメータの数値をメモしておいてください。
+```
+パラメータの例
+size 0.08
+x -0.044
+y 0.015
+z -0.131
+rotationX 154
+rotationY 262
+rotationZ 0
+```
+
+各パラメータをメモしたらプログラムを終了します。
+インスペクタに各パラメータを入力してください。
+![](/images/set-overlay-position-inspector.png)
+
+プログラムを実行して、左手首にオーバーレイが表示されていることを確認します。
+![](/images/overlay-fixed-position.jpg)
+
+パラメータを調整するために追加した Update() を削除しておきます。
+```diff cs:FileOverlay.cs
+- private void Update()
+- {
+-     SetOverlaySize(overlayHandle, size);
+- 
+-     var leftControllerIndex = OpenVR.System.GetTrackedDeviceIndexForControllerRole(ETrackedControllerRole.LeftHand);
+-     if (leftControllerIndex == OpenVR.k_unTrackedDeviceIndexInvalid)
+-     {
+-         Debug.Log("左手のコントローラが接続されていません");
+-         return;
+-     }
+-     
+-     var position = new Vector3(x, y, z);
+-     var rotation = Quaternion.Euler(rotationX, rotationY, rotationZ); 
+-     var rigidTransform = new SteamVR_Utils.RigidTransform(position, rotation);
+-     var matrix = rigidTransform.ToHmdMatrix34();
+-     var error = OpenVR.Overlay.SetOverlayTransformTrackedDeviceRelative(overlayHandle, leftControllerIndex, ref matrix);
+-     if (error != EVROverlayError.None)
+-     {
+-         throw new Exception("オーバーレイの位置設定に失敗しました: " + error);
+-     }
+- }
+```
+
+#### コントローラが接続されていない場合の対処
+現在、左手のコントローラを認識している状態で起動する必要があります。
+コントローラが取得できない場合は、接続されるまで取得を繰り返すように変更してみます。
+
+コントローラの Device Index を保存するためのメンバを作ります。
+```diff cs:FileOverlay.cs
+public class FileOverlay : MonoBehaviour
+{
+    private ulong overlayHandle = OpenVR.k_ulOverlayHandleInvalid;
++    private uint leftControllerIndex = OpenVR.k_unTrackedDeviceIndexInvalid;
+
+```
+
+```diff cs:FileOverlay.cs
+private void Start()
+{
+    InitOpenVR();
+    overlayHandle = CreateOverlay("FileOverlayKey", "FileOverlay");
+    SetOverlaySize(overlayHandle, size);
+
+-    var leftControllerIndex = OpenVR.System.GetTrackedDeviceIndexForControllerRole(ETrackedControllerRole.LeftHand);
++    var leftControllerIndex = OpenVR.System.GetTrackedDeviceIndexForControllerRole(ETrackedControllerRole.LeftHand);
+    if (leftControllerIndex == OpenVR.k_unTrackedDeviceIndexInvalid)
+    {
+        Debug.Log("左手のコントローラが接続されていません");
+        return;
+    }
+```
+
+↑コントローラの取得、位置指定を関数に分けておいて、Start(), Update() の両方から必要な時に呼べるようにしてから解説する
+
+
+:::message
+GetTrackedDeviceIndexForControllerRole() でコントローラの Index は取れるけどメソッドは deprecated で IVRInput を使うと書いてある。
+IVRInput でコントローラの Index は取得できる？
+-> Index は使用せずに、SteamVR Input のコントローラの Poses に割り当てたアクションから姿勢を取得するっぽい。で、Tracked Relative じゃなくて Absolute で出す？
+後で入力を扱う時に説明することにして、ここでは deprecated な API を使って取得することにする。OVRLE でもそうしているし。
+:::
+
+
+
+
+
+https://github.com/ValveSoftware/openvr/issues/1551
+
+OpenGL と DirectX の座標系
+https://tech.drecom.co.jp/knowhow-about-unity-coordinate-system/
+
+https://qiita.com/suzuryo3893/items/9e543cdf8bc64dc7002a
+
+https://github.com/ValveSoftware/openvr/issues/1551
