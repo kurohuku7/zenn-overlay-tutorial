@@ -241,7 +241,7 @@ private void Start()
 
     var position = new Vector3(0, 0, 2);
     var rotation = Quaternion.Euler(0, 0, 0);
-    SetOverlayTransformRelative(overlayHandle, OpenVR.k_unTrackedDeviceIndex_Hmd, position, rotation);
++   SetOverlayTransformRelative(overlayHandle, OpenVR.k_unTrackedDeviceIndex_Hmd, position, rotation);
 -   var rigidTransform = new SteamVR_Utils.RigidTransform(position, rotation);
 -   var matrix = rigidTransform.ToHmdMatrix34();
 -   var error = OpenVR.Overlay.SetOverlayTransformTrackedDeviceRelative(overlayHandle, OpenVR.k_unTrackedDeviceIndex_Hmd, ref matrix);
@@ -306,23 +306,16 @@ private void Start()
     overlayHandle = CreateOverlay("FileOverlayKey", "FileOverlay");
     SetOverlaySize(overlayHandle, 0.5f);
 
+-   var position = new Vector3(0, 0, 2);
+-   var rotation = Quaternion.Euler(0, 0, 0);
+-   SetOverlayTransformRelative(overlayHandle, OpenVR.k_unTrackedDeviceIndex_Hmd, position, rotation);
 +   var leftControllerIndex = OpenVR.System.GetTrackedDeviceIndexForControllerRole(ETrackedControllerRole.LeftHand);
-+   if (leftControllerIndex == OpenVR.k_unTrackedDeviceIndexInvalid)
++   if (leftControllerIndex != OpenVR.k_unTrackedDeviceIndexInvalid)
 +   {
-+       Debug.Log("左手のコントローラが接続されていません");
-+       return;
++       var position = new Vector3(0, 0, 2);
++       var rotation = Quaternion.Euler(0, 0, 0);
++       SetOverlayTransformRelative(overlayHandle, leftControllerIndex, position, rotation);
 +   }
-    
-    var position = new Vector3(0, 0, 2);
-    var rotation = Quaternion.Euler(0, 0, 0);
-    var rigidTransform = new SteamVR_Utils.RigidTransform(position, rotation);
-    var matrix = rigidTransform.ToHmdMatrix34();
--   var error = OpenVR.Overlay.SetOverlayTransformTrackedDeviceRelative(overlayHandle, OpenVR.k_unTrackedDeviceIndex_Hmd, ref matrix);
-+   var error = OpenVR.Overlay.SetOverlayTransformTrackedDeviceRelative(overlayHandle, leftControllerIndex, ref matrix);
-    if (error != EVROverlayError.None)
-    {
-        throw new Exception("オーバーレイの位置設定に失敗しました: " + error);
-    }
 
     var filePath = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg");
     SetOverlayFromFile(overlayHandle, filePath);
@@ -375,23 +368,16 @@ private void Start()
 +   SetOverlaySize(overlayHandle, size);
 
     var leftControllerIndex = OpenVR.System.GetTrackedDeviceIndexForControllerRole(ETrackedControllerRole.LeftHand);
-    if (leftControllerIndex == OpenVR.k_unTrackedDeviceIndexInvalid)
-    {
-        Debug.Log("左手のコントローラが接続されていません");
-        return;
-    }
++   if (leftControllerIndex != OpenVR.k_unTrackedDeviceIndexInvalid)
++   {
+-       var position = new Vector3(0, 0, 2);
+-       var rotation = Quaternion.Euler(0, 0, 0);
++       var position = new Vector3(x, y, z);
++       var rotation = Quaternion.Euler(rotationX, rotationY, rotationZ); 
++       SetOverlayTransformRelative(overlayHandle, leftControllerIndex, position, rotation);
++   }
 
--   var position = new Vector3(0, 0, 2);
--   var rotation = Quaternion.Euler(0, 0, 0);
-+   var position = new Vector3(x, y, z);
-+   var rotation = Quaternion.Euler(rotationX, rotationY, rotationZ); 
-    var rigidTransform = new SteamVR_Utils.RigidTransform(position, rotation);
-    var matrix = rigidTransform.ToHmdMatrix34();
-    var error = OpenVR.Overlay.SetOverlayTransformTrackedDeviceRelative(overlayHandle, leftControllerIndex, ref matrix);
-    if (error != EVROverlayError.None)
-    {
-        throw new Exception("オーバーレイの位置設定に失敗しました: " + error);
-    }
+    SetOverlayTransformRelative(overlayHandle, leftControllerIndex, position, rotation);
 
     var filePath = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg");
     SetOverlayFromFile(overlayHandle, filePath);
@@ -410,20 +396,11 @@ private void Start()
 +     SetOverlaySize(overlayHandle, size);
 + 
 +     var leftControllerIndex = OpenVR.System.GetTrackedDeviceIndexForControllerRole(ETrackedControllerRole.LeftHand);
-+     if (leftControllerIndex == OpenVR.k_unTrackedDeviceIndexInvalid)
++     if (leftControllerIndex != OpenVR.k_unTrackedDeviceIndexInvalid)
 +     {
-+         Debug.Log("左手のコントローラが接続されていません");
-+         return;
-+     }
-+     
-+     var position = new Vector3(x, y, z);
-+     var rotation = Quaternion.Euler(rotationX, rotationY, rotationZ); 
-+     var rigidTransform = new SteamVR_Utils.RigidTransform(position, rotation);
-+     var matrix = rigidTransform.ToHmdMatrix34();
-+     var error = OpenVR.Overlay.SetOverlayTransformTrackedDeviceRelative(overlayHandle, leftControllerIndex, ref matrix);
-+     if (error != EVROverlayError.None)
-+     {
-+         throw new Exception("オーバーレイの位置設定に失敗しました: " + error);
++         var position = new Vector3(x, y, z);
++         var rotation = Quaternion.Euler(rotationX, rotationY, rotationZ); 
++         SetOverlayTransformRelative(overlayHandle, leftControllerIndex, position, rotation);
 +     }
 + }
 
@@ -468,55 +445,48 @@ rotationZ 0
 -     SetOverlaySize(overlayHandle, size);
 - 
 -     var leftControllerIndex = OpenVR.System.GetTrackedDeviceIndexForControllerRole(ETrackedControllerRole.LeftHand);
--     if (leftControllerIndex == OpenVR.k_unTrackedDeviceIndexInvalid)
--     {
--         Debug.Log("左手のコントローラが接続されていません");
--         return;
--     }
--     
 -     var position = new Vector3(x, y, z);
 -     var rotation = Quaternion.Euler(rotationX, rotationY, rotationZ); 
--     var rigidTransform = new SteamVR_Utils.RigidTransform(position, rotation);
--     var matrix = rigidTransform.ToHmdMatrix34();
--     var error = OpenVR.Overlay.SetOverlayTransformTrackedDeviceRelative(overlayHandle, leftControllerIndex, ref matrix);
--     if (error != EVROverlayError.None)
--     {
--         throw new Exception("オーバーレイの位置設定に失敗しました: " + error);
--     }
+-     SetOverlayTransformRelative(overlayHandle, leftControllerIndex, position, rotation);
 - }
 ```
 
 #### コントローラが接続されていない場合の対処
-現在、左手のコントローラを認識している状態で起動する必要があります。
-コントローラが取得できない場合は、接続されるまで取得を繰り返すように変更してみます。
 
-コントローラの Device Index を保存するためのメンバを作ります。
+現在のコードではプログラムが実行された時にコントローラが接続されていなければいけません。
+実行中にコントローラが接続・切断される場合があるため、コントローラの取得とコントローラからの相対位置指定を Update() の中に移動しておきます。
+
+クラスのメンバに左手のコントローラの Device Index を保存するように変更します。
 ```diff cs:FileOverlay.cs
-public class FileOverlay : MonoBehaviour
-{
-    private ulong overlayHandle = OpenVR.k_ulOverlayHandleInvalid;
-+   private uint leftControllerIndex = OpenVR.k_unTrackedDeviceIndexInvalid;
-
-```
-
-```diff cs:FileOverlay.cs
-private void Start()
-{
-    InitOpenVR();
-    overlayHandle = CreateOverlay("FileOverlayKey", "FileOverlay");
-    SetOverlaySize(overlayHandle, size);
-
--   var leftControllerIndex = OpenVR.System.GetTrackedDeviceIndexForControllerRole(ETrackedControllerRole.LeftHand);
-+   leftControllerIndex = OpenVR.System.GetTrackedDeviceIndexForControllerRole(ETrackedControllerRole.LeftHand);
-    if (leftControllerIndex == OpenVR.k_unTrackedDeviceIndexInvalid)
+    private void Start()
     {
-        Debug.Log("左手のコントローラが接続されていません");
-        return;
+        InitOpenVR();
+        overlayHandle = CreateOverlay("FileOverlayKey", "FileOverlay");
+        SetOverlaySize(overlayHandle, size);
+
+-       var leftControllerIndex = OpenVR.System.GetTrackedDeviceIndexForControllerRole(ETrackedControllerRole.LeftHand);
+-       var position = new Vector3(x, y, z);
+-       var rotation = Quaternion.Euler(rotationX, rotationY, rotationZ);
+-       SetOverlayTransformRelative(overlayHandle, leftControllerIndex, position, rotation);
+
+        var filePath = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg");
+        SetOverlayFromFile(overlayHandle, filePath);
+
+-       ShowOverlay(overlayHandle);
     }
+
++   private void Update()
++   {
++       var leftControllerIndex = OpenVR.System.GetTrackedDeviceIndexForControllerRole(ETrackedControllerRole.LeftHand);
++       var position = new Vector3(x, y, z);
++       var rotation = Quaternion.Euler(rotationX, rotationY, rotationZ);
++       SetOverlayTransformRelative(overlayHandle, leftControllerIndex, position, rotation);
++       ShowOverlay(overlayHandle);
++   }
+
 ```
 
-↑コントローラの取得、位置指定を関数に分けておいて、Start(), Update() の両方から必要な時に呼べるようにしてから解説する
-
+※ 今回はシンプルに Update() 内で処理しますが、VREvent_TrackedDeviceRoleChanged イベントを使って処理することも可能です。
 
 :::message
 GetTrackedDeviceIndexForControllerRole() でコントローラの Index は取れるけどメソッドは deprecated で IVRInput を使うと書いてある。
@@ -525,12 +495,152 @@ IVRInput でコントローラの Index は取得できる？
 後で入力を扱う時に説明することにして、ここでは deprecated な API を使って取得することにする。OVRLE でもそうしているし。
 :::
 
+## 最終的なコード
+```cs:FileOverlay.cs
+using System;
+using UnityEngine;
+using Valve.VR;
 
+public class FileOverlay : MonoBehaviour
+{
+    private ulong overlayHandle = OpenVR.k_ulOverlayHandleInvalid;
+
+    [Range(0, 0.5f)] public float size;
+    [Range(-0.5f, 0.5f)] public float x;
+    [Range(-0.5f, 0.5f)] public float y;
+    [Range(-0.5f, 0.5f)] public float z;
+    [Range(0, 360)] public int rotationX;
+    [Range(0, 360)] public int rotationY;
+    [Range(0, 360)] public int rotationZ;
+
+    private void Start()
+    {
+        InitOpenVR();
+        overlayHandle = CreateOverlay("FileOverlayKey", "FileOverlay");
+        SetOverlaySize(overlayHandle, size);
+        
+        var filePath = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg");
+        SetOverlayFromFile(overlayHandle, filePath);
+
+        ShowOverlay(overlayHandle);
+    }
+
+    private void Update()
+    {
+        var leftControllerIndex = OpenVR.System.GetTrackedDeviceIndexForControllerRole(ETrackedControllerRole.LeftHand);
+        if (leftControllerIndex != OpenVR.k_unTrackedDeviceIndexInvalid)
+        {
+            var position = new Vector3(x, y, z);
+            var rotation = Quaternion.Euler(rotationX, rotationY, rotationZ);
+            SetOverlayTransformRelative(overlayHandle, leftControllerIndex, position, rotation);
+        }
+    }
+
+    private void OnDestroy()
+    {
+        DestroyOverlay(overlayHandle);
+        ShutdownOpenVR();
+    }
+
+    private void InitOpenVR()
+    {
+        if (OpenVR.System != null)
+        {
+            Debug.Log("OpenVR は既に初期化されています");
+            return;
+        }
+
+        var initError = EVRInitError.None;
+        OpenVR.Init(ref initError, EVRApplicationType.VRApplication_Overlay);
+        if (initError != EVRInitError.None)
+        {
+            throw new Exception("OpenVRの初期化に失敗しました: " + initError);
+        }
+    }
+
+    private void ShutdownOpenVR()
+    {
+        if (OpenVR.System != null)
+        {
+            OpenVR.Shutdown();
+        }
+    }
+
+    private ulong CreateOverlay(string key, string name)
+    {
+        var handle = OpenVR.k_ulOverlayHandleInvalid;
+        var error = OpenVR.Overlay.CreateOverlay(key, name, ref handle);
+        if (error != EVROverlayError.None)
+        {
+            throw new Exception("オーバーレイの作成に失敗しました: " + error);
+        }
+
+        return handle;
+    }
+
+    private void DestroyOverlay(ulong handle)
+    {
+        if (handle != OpenVR.k_ulOverlayHandleInvalid)
+        {
+            OpenVR.Overlay.DestroyOverlay(handle);
+        }
+    }
+
+    private void ShowOverlay(ulong handle)
+    {
+        var error = OpenVR.Overlay.ShowOverlay(handle);
+        if (error != EVROverlayError.None)
+        {
+            throw new Exception("オーバーレイの表示に失敗しました: " + error);
+        }
+    }
+
+    private void SetOverlayFromFile(ulong handle, string path)
+    {
+        var error = OpenVR.Overlay.SetOverlayFromFile(handle, path);
+        if (error != EVROverlayError.None)
+        {
+            throw new Exception("画像ファイルの描画に失敗しました: " + error);
+        }
+    }
+
+    private void SetOverlaySize(ulong handle, float size)
+    {
+        var error = OpenVR.Overlay.SetOverlayWidthInMeters(handle, size);
+        if (error != EVROverlayError.None)
+        {
+            throw new Exception("オーバーレイのサイズ設定に失敗しました: " + error);
+        }
+    }
+
+    private void SetOverlayTransformAbsolute(ulong handle, Vector3 position, Quaternion rotation)
+    {
+        var rigidTransform = new SteamVR_Utils.RigidTransform(position, rotation);
+        var matrix = rigidTransform.ToHmdMatrix34();
+        var error = OpenVR.Overlay.SetOverlayTransformAbsolute(handle, ETrackingUniverseOrigin.TrackingUniverseStanding, ref matrix);
+        if (error != EVROverlayError.None)
+        {
+            throw new Exception("オーバーレイの位置設定に失敗しました: " + error);
+        }
+    }
+
+    private void SetOverlayTransformRelative(ulong handle, uint deviceIndex, Vector3 position, Quaternion rotation)
+    {
+        var rigidTransform = new SteamVR_Utils.RigidTransform(position, rotation);
+        var matrix = rigidTransform.ToHmdMatrix34();
+        var error = OpenVR.Overlay.SetOverlayTransformTrackedDeviceRelative(handle, deviceIndex, ref matrix);
+        if (error != EVROverlayError.None)
+        {
+            throw new Exception("オーバーレイの位置設定に失敗しました: " + error);
+        }
+    }
+}
+```
+
+## 編集メモ
 Wiki を貼る必要はない。（それが読める人はこれ読まないから。）
 参考としてリンクは入れてもいいけど最後の方にまとめるとかして、本文のじゃまにならないようにする。
 このチュートリアルは、これだけで独立するように。
-
-
 
 https://github.com/ValveSoftware/openvr/issues/1551
 

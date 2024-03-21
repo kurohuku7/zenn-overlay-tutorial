@@ -568,7 +568,7 @@ void Start()
 + }
 ```
 
-最終的なスクリプトは下記の通りです。
+### 最終的なコード
 ```cs:FileOverlay.cs
 using System;
 using UnityEngine;
