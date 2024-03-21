@@ -57,25 +57,25 @@ public class FileOverlay : MonoBehaviour
 {
     private void Start()
     {
-+        if (OpenVR.System != null)
-+        {
-+            Debug.Log("OpenVR は既に初期化されています");
-+        }
-+        var initError = EVRInitError.None;
-+        OpenVR.Init(ref initError, EVRApplicationType.VRApplication_Overlay);
-+        if (initError != EVRInitError.None)
-+        {
-+            throw new Exception("OpenVR の初期化に失敗しました: " + initError);
-+        }
-+    }
++       if (OpenVR.System != null)
++       {
++           Debug.Log("OpenVR は既に初期化されています");
++       }
++       var initError = EVRInitError.None;
++       OpenVR.Init(ref initError, EVRApplicationType.VRApplication_Overlay);
++       if (initError != EVRInitError.None)
++       {
++           throw new Exception("OpenVR の初期化に失敗しました: " + initError);
++       }
++   }
 
-+    private void OnDestroy()
-+    {
-+        if (OpenVR.System != null)
-+        {
-+            OpenVR.Shutdown();
-+        }
-+    }
++   private void OnDestroy()
++   {
++       if (OpenVR.System != null)
++       {
++           OpenVR.Shutdown();
++       }
++   }
 }
 ```
 
@@ -157,15 +157,15 @@ public class FileOverlay : MonoBehaviour
 
 -       Debug.Log(OpenVR.Overlay);
 -
--        if (OpenVR.System == null)
--        {
--            var initError = EVRInitError.None;
--            OpenVR.Init(ref initError, EVRApplicationType.VRApplication_Overlay);
--            if (initError != EVRInitError.None)
--            {
--                throw new Exception("OpenVRの初期化に失敗しました: " + initError);
--            }
--        }
+-       if (OpenVR.System == null)
+-       {
+-           var initError = EVRInitError.None;
+-           OpenVR.Init(ref initError, EVRApplicationType.VRApplication_Overlay);
+-           if (initError != EVRInitError.None)
+-           {
+-               throw new Exception("OpenVRの初期化に失敗しました: " + initError);
+-           }
+-       }
 -
 -       Debug.Log(OpenVR.Overlay);
     }
@@ -178,18 +178,18 @@ public class FileOverlay : MonoBehaviour
         }
     }
 
-+    private void InitOpenVR()
-+    {
-+        if (OpenVR.System == null)
-+        {
-+            var initError = EVRInitError.None;
-+            OpenVR.Init(ref initError, EVRApplicationType.VRApplication_Overlay);
-+            if (initError != EVRInitError.None)
-+            {
-+                throw new Exception("OpenVRの初期化に失敗しました: " + initError);
-+            }
-+        }
-+    }
++   private void InitOpenVR()
++   {
++       if (OpenVR.System == null)
++       {
++           var initError = EVRInitError.None;
++           OpenVR.Init(ref initError, EVRApplicationType.VRApplication_Overlay);
++           if (initError != EVRInitError.None)
++           {
++               throw new Exception("OpenVRの初期化に失敗しました: " + initError);
++           }
++       }
++   }
 }
 ```
 
@@ -207,11 +207,11 @@ public class FileOverlay : MonoBehaviour
 
     private void OnDestroy()
     {
--        if (OpenVR.System != null)
--        {
--            OpenVR.Shutdown();
--        }
-+        ShutdownOpenVR();
+-       if (OpenVR.System != null)
+-       {
+-           OpenVR.Shutdown();
+-       }
++       ShutdownOpenVR();
     }
 
     private void InitOpenVR()
@@ -227,13 +227,13 @@ public class FileOverlay : MonoBehaviour
         }
     }
 
-+    private void ShutdownOpenVR();
-+    {
-+        if (OpenVR.System != null)
-+        {
-+            OpenVR.Shutdown();
-+        }
-+    }
++   private void ShutdownOpenVR();
++   {
++       if (OpenVR.System != null)
++       {
++           OpenVR.Shutdown();
++       }
++   }
 }
 ```
 
@@ -246,14 +246,14 @@ void Start()
 {
     InitOpenVR();
 
-+    var overlayHandle = OpenVR.k_ulOverlayHandleInvalid;
-+    var key = "FileOverlayKey";
-+    var name = "FileOverlay";
-+    var error = OpenVR.Overlay.CreateOverlay(key, name, ref overlayHandle);
-+    if (error != EVROverlayError.None)
-+    {
-+        throw new Exception("オーバーレイの作成に失敗しました: " + error);
-+    }
++   var overlayHandle = OpenVR.k_ulOverlayHandleInvalid;
++   var key = "FileOverlayKey";
++   var name = "FileOverlay";
++   var error = OpenVR.Overlay.CreateOverlay(key, name, ref overlayHandle);
++   if (error != EVROverlayError.None)
++   {
++       throw new Exception("オーバーレイの作成に失敗しました: " + error);
++   }
 }
 ```
 
@@ -284,7 +284,7 @@ using Valve.VR;
 
 public class FileOverlay : MonoBehaviour
 {
-+    private ulong overlayHandle = OpenVR.k_ulOverlayHandleInvalid;
++   private ulong overlayHandle = OpenVR.k_ulOverlayHandleInvalid;
 
     private void Start()
     {
@@ -300,10 +300,10 @@ public class FileOverlay : MonoBehaviour
 
     private void OnDestroy()
     {
-+        if (overlayHandle != OpenVR.k_ulOverlayHandleInvalid)
-+        {
-+            OpenVR.Overlay.DestroyOverlay(overlayHandle);
-+        }
++       if (overlayHandle != OpenVR.k_ulOverlayHandleInvalid)
++       {
++           OpenVR.Overlay.DestroyOverlay(overlayHandle);
++       }
 
         ShutdownOpenVR();
     }
@@ -367,21 +367,21 @@ public class FileOverlay : MonoBehaviour
     {
        InitOpenVR();
 
--       var error = OpenVR.Overlay.CreateOverlay("FileOverlayKey", "FileOverlay", ref overlayHandle);
--       if (error != EVROverlayError.None)
--       {
--           throw new Exception("オーバーレイの作成に失敗しました: " + error);
--       }
-+       overlayHandle = CreateOverlay("FileOverlayKey", "FileOverlay");
+-      var error = OpenVR.Overlay.CreateOverlay("FileOverlayKey", "FileOverlay", ref overlayHandle);
+-      if (error != EVROverlayError.None)
+-      {
+-          throw new Exception("オーバーレイの作成に失敗しました: " + error);
+-      }
++      overlayHandle = CreateOverlay("FileOverlayKey", "FileOverlay");
     }
 
     private void OnDestroy()
     {
--        if (overlayHandle != OpenVR.k_ulOverlayHandleInvalid)
--        {
--            OpenVR.Overlay.DestroyOverlay(overlayHandle);
--        }
-+        DestroyOverlay(overlayHandle);
+-       if (overlayHandle != OpenVR.k_ulOverlayHandleInvalid)
+-       {
+-           OpenVR.Overlay.DestroyOverlay(overlayHandle);
+-       }
++       DestroyOverlay(overlayHandle);
         ShutdownOpenVR();
     }
 
@@ -406,22 +406,22 @@ public class FileOverlay : MonoBehaviour
         }
     }
 
-+    private ulong CreateOverlay(string key, string name) {
-+        var handle = OpenVR.k_ulOverlayHandleInvalid;
-+        var error = OpenVR.Overlay.CreateOverlay(key, name, ref handle);
-+        if (error != EVROverlayError.None)
-+        {
-+            throw new Exception("オーバーレイの作成に失敗しました: " + error);
-+        }
-+        return handle;
-+    }
++   private ulong CreateOverlay(string key, string name) {
++       var handle = OpenVR.k_ulOverlayHandleInvalid;
++       var error = OpenVR.Overlay.CreateOverlay(key, name, ref handle);
++       if (error != EVROverlayError.None)
++       {
++           throw new Exception("オーバーレイの作成に失敗しました: " + error);
++       }
++       return handle;
++   }
 
-+    private void DestroyOverlay(ulong handle) {
-+        if (handle != OpenVR.k_ulOverlayHandleInvalid)
-+        {
-+            OpenVR.Overlay.DestroyOverlay(handle);
-+        }
-+    }
++   private void DestroyOverlay(ulong handle) {
++       if (handle != OpenVR.k_ulOverlayHandleInvalid)
++       {
++           OpenVR.Overlay.DestroyOverlay(handle);
++       }
++   }
 }
 ```
 
@@ -449,11 +449,11 @@ private void Start()
     InitOpenVR();
     overlayHandle = CreateOverlay("FileOverlayKey", "FileOverlay");
 
-+    var error = OpenVR.Overlay.ShowOverlay(overlayHandle);
-+    if (error != EVROverlayError.None)
-+    {
-+        throw new Exception("オーバーレイの表示に失敗しました: " + error);
-+    }
++   var error = OpenVR.Overlay.ShowOverlay(overlayHandle);
++   if (error != EVROverlayError.None)
++   {
++       throw new Exception("オーバーレイの表示に失敗しました: " + error);
++   }
 }
 ```
 
@@ -487,12 +487,12 @@ void Start()
     InitOpenVR();
     overlayHandle = CreateOverlay("FileOverlayKey", "FileOverlay");
 
-+    var file = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg");
-+    error = OpenVR.Overlay.SetOverlayFromFile(overlayHandle, filePath);
-+    if (error != EVROverlayError.None)
-+    {
-+        throw new Exception("画像ファイルの描画に失敗しました: " + error);
-+    }
++   var file = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg");
++   error = OpenVR.Overlay.SetOverlayFromFile(overlayHandle, filePath);
++   if (error != EVROverlayError.None)
++   {
++       throw new Exception("画像ファイルの描画に失敗しました: " + error);
++   }
 
     var error = OpenVR.Overlay.ShowOverlay(overlayHandle);
     if (error != EVROverlayError.None)
@@ -530,21 +530,21 @@ void Start()
     InitOpenVR();
     overlayHandle = CreateOverlay("FileOverlayKey", "FileOverlay");
 
-+    var filePath = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg")
-+    SetOverlayFromFile(overlayHandle, filePath);
--    var file = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg");
--    var error = OpenVR.Overlay.SetOverlayFromFile(overlayHandle, filePath);
--    if (error != EVROverlayError.None)
--    {
--        throw new Exception("画像ファイルの描画に失敗しました: " + error);
--    }
++   var filePath = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg")
++   SetOverlayFromFile(overlayHandle, filePath);
+-   var file = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg");
+-   var error = OpenVR.Overlay.SetOverlayFromFile(overlayHandle, filePath);
+-   if (error != EVROverlayError.None)
+-   {
+-       throw new Exception("画像ファイルの描画に失敗しました: " + error);
+-   }
 
-+    ShowOverlay(overlayHandle);
--    var error = OpenVR.Overlay.ShowOverlay(overlayHandle);
--    if (error != EVROverlayError.None)
--    {
--        throw new Exception("オーバーレイの表示に失敗しました: " + error);
--    }
++   ShowOverlay(overlayHandle);
+-   var error = OpenVR.Overlay.ShowOverlay(overlayHandle);
+-   if (error != EVROverlayError.None)
+-   {
+-       throw new Exception("オーバーレイの表示に失敗しました: " + error);
+-   }
 }
 
 ...
