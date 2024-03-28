@@ -3,23 +3,74 @@ title: "はじめに"
 free: false
 ---
 
-test published from github repository
-
-## SteamVR オーバーレイアプリケーションとは？
-- SteamVR でゲームを起動中にオーバーレイを表示することができるアプリケーションです。
-- ゲーム中に使えるので様々なツールやユーティリティが作られています。
+このチュートリアルについての注意書きです。
 
 ## 動作環境
-このチュートリアルでは下記の環境で動作確認しています。
+下記の環境でコードの動作を確認しています。
 
+- SteamVR beta 2.5.1
 - Unity 2022.3.20
-- [SteamVR Unity Plugin v2.8.0](https://assetstore.unity.com/packages/tools/integration/steamvr-plugin-32647)
+- SteamVR Unity Plugin v2.8.0
 
-## スクリーンショット
-各種ツールのスクリーンショットは、言語設定を英語にした状態のものです。
-設定項目名などは英語版で表記するため、日本語に設定した場合と表記が異なる場合があります。
+## 情報の正確性
+間違った情報が含まれている可能性があります。OpenVR のドキュメントやソースコードに書かれていない情報もあるため、結構手探りで API を使っていたりします。
 
-## 正確性について
-OpenVR のドキュメントやソースコードに書かれていない情報もあるため、チュートリアルの内容に間違った解釈が含まれている可能性があります。
-説明のため、一部のエラー処理や例外処理を簡素化している場合があります。
-予めご了承ください。
+## 連絡先
+なにか気づいたことがあれば [@kurohuku7](https://twitter.com/kurohuku7) へご連絡ください。
+このチュートリアルのテキストや画像は GitHub の公開リポジトリに入っているので、修正のプルリクエストを送信することもできます。
+
+## 設定言語
+各ツールのメニュー名などは、設定言語を英語にした場合の表記になっています。
+
+## OpenVR のファイルについて
+SteamVR Unity Plugin に含まれる OpenVR のファイルを使用しています。
+プラグイン内の他のファイルを導入したくない場合は、OpenVR のリポジトリから必要なファイルをダウンロードして、プロジェクト内に直接配置してください。
+
+- openvr.cs
+- openvr.dll
+
+https://github.com/ValveSoftware/openvr
+
+## エラー処理について
+コードの読みやすさのため、エラー発生時に throw を使用している箇所が多いです。
+
+```cs:例外処理を使用したコード例
+private void InitOpenVR()
+{
+   var initError = EVRInitError.None;
+   OpenVR.Init(ref initError, EVRApplicationType.VRApplication_Overlay);
+   if (initError != EVRInitError.None)
+   {
+       throw new Exception("OpenVR の初期化に失敗しました: " + initError);
+   }
+}
+```
+
+return でエラーコード等を返したい場合は、下記のようにコードを読み替えてください。
+```cs:エラーコードを使用したコード例1
+// 初期化に成功したら EVRInitError.None を返す
+private bool InitOpenVR()
+{
+   var initError = EVRInitError.None;
+   OpenVR.Init(ref initError, EVRApplicationType.VRApplication_Overlay);
+   if (initError != EVRInitError.None)
+   {
+       Debug.LogError("OpenVR の初期化に失敗しました: " + initError);
+   }
+   return initError;
+}
+```
+```cs:エラーコードを使用したコード例2
+// 初期化に成功したら true, 失敗したら false を返す
+private bool InitOpenVR()
+{
+   var initError = EVRInitError.None;
+   OpenVR.Init(ref initError, EVRApplicationType.VRApplication_Overlay);
+   if (initError != EVRInitError.None)
+   {
+       Debug.LogError("OpenVR の初期化に失敗しました: " + initError);
+       return true;
+   }
+  return false;
+}
+```

@@ -22,11 +22,11 @@ https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.CVROverlay.htm
 
 オーバーレイの横幅を 0.5 m にしてみます。
 
-```diff cs:FileOverlay.cs
+```diff cs:WatchOverlay.cs
 private void Start()
 {        
     InitOpenVR();
-    overlayHandle = CreateOverlay("FileOverlayKey", "FileOverlay");
+    overlayHandle = CreateOverlay("WatchOverlayKey", "WatchOverlay");
 
     var filePath = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg");
     SetOverlayFromFile(overlayHandle, filePath);
@@ -83,11 +83,11 @@ https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.ETrackingUnive
 
 オーバーレイの表示位置を、プレイエリアの中心から正面方向に 3 m、上方向に 2 m にして、オーバーレイを Z 軸周りに 45 度回転させてみます。
 
-```diff cs:FileOverlay.cs
+```diff cs:WatchOverlay.cs
 private void Start()
 {
     InitOpenVR();
-    overlayHandle = CreateOverlay("FileOverlayKey", "FileOverlay");
+    overlayHandle = CreateOverlay("WatchOverlayKey", "WatchOverlay");
 
     var filePath = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg");
     SetOverlayFromFile(overlayHandle, filePath);
@@ -117,15 +117,15 @@ private void Start()
 
 一旦、サイズと位置の処理を関数に分けて整理しておきます。
 
-```diff cs:FileOverlay.cs
-public class FileOverlay : MonoBehaviour
+```diff cs:WatchOverlay.cs
+public class WatchOverlay : MonoBehaviour
 {
     // ...中略...
 
     private void Start()
     {
         InitOpenVR();
-        overlayHandle = CreateOverlay("FileOverlayKey", "FileOverlay");
+        overlayHandle = CreateOverlay("WatchOverlayKey", "WatchOverlay");
 +       SetOverlaySize(overlayHandle, 0.5f);
     
 +       var position = new Vector3(0, 2, 3);
@@ -203,11 +203,11 @@ https://github.com/ValveSoftware/openvr/blob/master/headers/openvr_api.cs#L7706-
 
 HMD の正面 2m 先にオーバーレイを表示してみます。
 
-```diff cs:FileOverlay.cs
+```diff cs:WatchOverlay.cs
 private void Start()
 {
     InitOpenVR();
-    overlayHandle = CreateOverlay("FileOverlayKey", "FileOverlay");
+    overlayHandle = CreateOverlay("WatchOverlayKey", "WatchOverlay");
     SetOverlaySize(overlayHandle, 0.5f);
 
 -   var position = new Vector3(0, 2, 3);
@@ -232,11 +232,11 @@ private void Start()
 ```
 
 オーバーレイの相対位置指定を関数に分けて整理しておきます。
-```diff cs:FileOverlay.cs
+```diff cs:WatchOverlay.cs
 private void Start()
 {
     InitOpenVR();
-    overlayHandle = CreateOverlay("FileOverlayKey", "FileOverlay");
+    overlayHandle = CreateOverlay("WatchOverlayKey", "WatchOverlay");
     SetOverlaySize(overlayHandle, 0.5f);
 
     var position = new Vector3(0, 0, 2);
@@ -299,11 +299,11 @@ https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.ETrackedContro
 
 先程の HMD の代わりに、左手のコントローラの番号を取得して、コントローラに追従させてみます。
 
-```diff cs:FileOverlay.cs
+```diff cs:WatchOverlay.cs
 private void Start()
 {
     InitOpenVR();
-    overlayHandle = CreateOverlay("FileOverlayKey", "FileOverlay");
+    overlayHandle = CreateOverlay("WatchOverlayKey", "WatchOverlay");
     SetOverlaySize(overlayHandle, 0.5f);
 
 -   var position = new Vector3(0, 0, 2);
@@ -340,8 +340,8 @@ SteamVR 上で左手のコントローラが接続されていることを確認
 大きさ、位置、角度をインスペクタから変更できるようにします。
 Rande() 属性でスライダーを使えるようにします。
 
-```diff cs:FileOverlay.cs
-public class FileOverlay : MonoBehaviour
+```diff cs:WatchOverlay.cs
+public class WatchOverlay : MonoBehaviour
 {
     private ulong overlayHandle = OpenVR.k_ulOverlayHandleInvalid;
 
@@ -359,11 +359,11 @@ public class FileOverlay : MonoBehaviour
 
 
 サイズと位置をインスペクタの値で更新します。
-```diff cs:FileOverlay.cs
+```diff cs:WatchOverlay.cs
 private void Start()
 {
     InitOpenVR();
-    overlayHandle = CreateOverlay("FileOverlayKey", "FileOverlay");
+    overlayHandle = CreateOverlay("WatchOverlayKey", "WatchOverlay");
 -   SetOverlaySize(overlayHandle, 0.5f);
 +   SetOverlaySize(overlayHandle, size);
 
@@ -388,7 +388,7 @@ private void Start()
 
 実行中に値を変更できるようにするため、Update() を追加して、サイズ指定、コントローラ取得、位置指定のコードをコピーします。
 これはオーバーレイの表示位置を調整するためのもので、調整後に削除するコードです。
-```diff cs:FileOverlay.cs
+```diff cs:WatchOverlay.cs
 ...
 
 + private void Update()
@@ -439,7 +439,7 @@ rotationZ 0
 ![](/images/overlay-fixed-position.jpg)
 
 パラメータを調整するために追加した Update() を削除しておきます。
-```diff cs:FileOverlay.cs
+```diff cs:WatchOverlay.cs
 - private void Update()
 - {
 -     SetOverlaySize(overlayHandle, size);
@@ -457,11 +457,11 @@ rotationZ 0
 実行中にコントローラが接続・切断される場合があるため、コントローラの取得とコントローラからの相対位置指定を Update() の中に移動しておきます。
 
 クラスのメンバに左手のコントローラの Device Index を保存するように変更します。
-```diff cs:FileOverlay.cs
+```diff cs:WatchOverlay.cs
     private void Start()
     {
         InitOpenVR();
-        overlayHandle = CreateOverlay("FileOverlayKey", "FileOverlay");
+        overlayHandle = CreateOverlay("WatchOverlayKey", "WatchOverlay");
         SetOverlaySize(overlayHandle, size);
 
 -       var leftControllerIndex = OpenVR.System.GetTrackedDeviceIndexForControllerRole(ETrackedControllerRole.LeftHand);
@@ -496,12 +496,12 @@ IVRInput でコントローラの Index は取得できる？
 :::
 
 ## 最終的なコード
-```cs:FileOverlay.cs
+```cs:WatchOverlay.cs
 using System;
 using UnityEngine;
 using Valve.VR;
 
-public class FileOverlay : MonoBehaviour
+public class WatchOverlay : MonoBehaviour
 {
     private ulong overlayHandle = OpenVR.k_ulOverlayHandleInvalid;
 
@@ -516,7 +516,7 @@ public class FileOverlay : MonoBehaviour
     private void Start()
     {
         InitOpenVR();
-        overlayHandle = CreateOverlay("FileOverlayKey", "FileOverlay");
+        overlayHandle = CreateOverlay("WatchOverlayKey", "WatchOverlay");
         SetOverlaySize(overlayHandle, size);
         
         var filePath = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg");
