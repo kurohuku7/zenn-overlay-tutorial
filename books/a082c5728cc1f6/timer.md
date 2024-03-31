@@ -4,16 +4,13 @@ free: false
 ---
 
 オーバーレイに時刻をリアルタイムに表示してみます。
-現在は画像ファイルを表示していますが、Unity のカメラで作成した画像をオーバーレイとして表示してみます。
+画像ファイルの代わりに、Unity のカメラ映像をリアルタイムでオーバーレイに表示してみます。
 
 ## オーバーレイへのテクスチャの書き込み
-SetOverlayTexture() メソッドで、任意のテクスチャをオーバーレイに書き込むことができます。
-
-https://github.com/ValveSoftware/openvr/wiki/IVROverlay::SetOverlayTexture
+[SetOverlayTexture()](https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.CVROverlay.html#Valve_VR_CVROverlay_SetOverlayTexture_System_UInt64_Valve_VR_Texture_t__) メソッドで、任意のテクスチャをオーバーレイに書き込むことができます。（詳細は [Wiki](https://github.com/ValveSoftware/openvr/wiki/IVROverlay::SetOverlayTexture)）
 
 DirectX や OpenGL のテクスチャデータのポインタを渡します。
-Unity の Texture クラスの GetNativeTexturePtr() メソッドで、DirectX や OpenGL のテクスチャデータのポインタを取得できるので、これを SetOverlayTexture() に渡します。
-https://docs.unity3d.com/ScriptReference/Texture.GetNativeTexturePtr.html
+Unity の Texture クラスの [GetNativeTexturePtr()](https://docs.unity3d.com/ScriptReference/Texture.GetNativeTexturePtr.html) で、DirectX や OpenGL のテクスチャのポインタを取得できるので、これを `SetOverlayTexture()` に渡します。
 
 ## テクスチャの準備
 
