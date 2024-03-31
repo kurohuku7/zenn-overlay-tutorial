@@ -20,7 +20,7 @@ void Start()
 
 ※ 実際の `key` には `Application.companyName` や `Application.productName` を組み合わせるのが良いかと思います。
 
-### オーバーレイハンドル
+## オーバーレイハンドル
 ファイルをファイルハンドルで操作するように、オーバーレイはオーバーレイハンドルで操作します。
 先にオーバーレイハンドルを保存するための変数を作っておきます。
 オーバーレイが作成できていない場合のハンドルの値が `OpenVR.k_ulOverlayHandleInvalid` として定義されているので、これで初期化しておきます。
@@ -35,7 +35,7 @@ void Start()
 }
 ```
 
-### オーバーレイを作成
+## オーバーレイを作成
 [Wiki](https://github.com/ValveSoftware/openvr/wiki/IVROverlay::CreateOverlay) を参考にして [CreateOverlay()](https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.CVROverlay.html#Valve_VR_CVROverlay_CreateOverlay_System_String_System_String_System_UInt64__) を使います。
 引数には `key`, `name`, `overlayHandle` の参照を渡します。
 
@@ -54,7 +54,7 @@ void Start()
 作成に成功すると `overlayHandle` に、作成されたオーバーレイのハンドルが保存されます。
 エラーは `CreateOverlay()` の戻り値として取得できます。
 
-### エラー処理
+## エラー処理
 オーバーレイが作成できなかった場合のエラー処理を追加します。
 ```diff cs:WatchOverlay.cs
 void Start()
@@ -75,7 +75,7 @@ void Start()
 その他のエラーも [EVROverlayError](https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.EVROverlayError.html) に定義されています。
 
 ## オーバーレイのクリーンアップ
-作成したーバーレイを、アプリケーション終了時に破棄します。
+作成したオーバーレイを、アプリケーション終了時に破棄します。
 [Wiki](https://github.com/ValveSoftware/openvr/wiki/IVROverlay::DestroyOverlay) によると、オーバーレイの破棄は `DestroyOverlay()` です。
 `Start()` でオーバーレイを作成して、`OnDestroy()` で破棄することにします。
 
@@ -287,11 +287,3 @@ public class WatchOverlay : MonoBehaviour
     }
 }
 ```
-
-## まとめ
-- CreateOverlay() でオーバーレイを作成しました
-- DestroyOverlay() でオーバーレイを破棄しました
-- 作成したオーバーレイを Overlay Viewer で確認しました
-- 作成したオーバーレイは olveryHandle で操作できます
-
-次のページでは、オーバーレイに画像ファイルを表示してみます。

@@ -119,3 +119,7 @@ uGUI を使って時計の UI（HUD）を作っていきます。
 
 ## レンダーテクスチャをオーバーレイに表示する
 OpenVR の API を使って、カメラの映像をオーバーレイに表示してみましょう。
+
+
+OpenGL と DirectX の座標系
+https://tech.drecom.co.jp/knowhow-about-unity-coordinate-system/
