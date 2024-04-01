@@ -406,7 +406,7 @@ public class WatchOverlay : MonoBehaviour
 
     private void InitOpenVR()
     {
-        if (OpenVR.System == null) return;
+        if (OpenVR.System != null) return;
 
         var initError = EVRInitError.None;
         OpenVR.Init(ref initError, EVRApplicationType.VRApplication_Overlay);
