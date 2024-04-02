@@ -229,11 +229,57 @@ https://tech.drecom.co.jp/knowhow-about-unity-coordinate-system/
 :::
 
 ## 時刻を表示する Canvas を作る
-uGUI を使って時計の UI（HUD）を作っていきます。
+Cube と Directional Light は使わないので削除します。
+
 シーンに UI > Canvas を作成します。
+Canvas の下に UI > Text - TextMeshPro を作成します。
 
+Scene
+┗ Canvas
+  ┗ Text(TMP)
 
+Canvas の Render mode を Screen Space - Camera にします。
+Render Camera にシーン上のカメラをドラッグしてください。
 
-### Canvas の作成
+Text の Alignment でテキストの縦横の位置を中央に揃えます。
+テキストに 18:30:25 のような時刻を入力してください。
+各要素の大きさや位置を調整して、カメラの中央に時刻が表示されるように調整します。
 
+Camera の Background で Alpha を 0 にして、カメラの背景を透明にします。
+これで数字だけが描画されるようになります。
 
+## 大きさの調整
+プログラムを実行して、左手に Canvas が表示されることを確認します。
+ちょうどいい大きさになるようにテキストの大きさなどを調整してください。
+
+## 時計を動かす
+スクリプト Watch.cs を新規作成します。
+下記のコードをコピーしてください。
+TextMeshPro にスクリプトを追加して、時刻が毎秒動くようにします。
+
+```cs:Watch.cs
+using UnityEngine;
+using System;
+using TMPro;
+
+public class Watch : MonoBehaviour
+{
+    private TextMeshProUGUI label;
+
+    void Start()
+    {
+        label = GetComponent<TextMeshProUGUI>();
+    }
+    
+    void Update()
+    {
+        var hour = DateTime.Now.Hour;
+        var minute = DateTime.Now.Minute;
+        var second = DateTime.Now.Second;
+        label.text = $"{hour:00}:{minute:00}:{second:00}";
+    }
+}
+
+```
+
+プログラムを実行して、左手の時計が動くようになったら OK です。
