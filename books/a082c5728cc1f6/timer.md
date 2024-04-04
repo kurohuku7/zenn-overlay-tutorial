@@ -380,3 +380,11 @@ public class Watch : MonoBehaviour
 ```
 
 プログラムを実行して、左手の時計が動くようになったら OK です。
+
+TODO: 実行時の Gif を追加
+
+## コードの整理
+
+コードを整理します
+
+
