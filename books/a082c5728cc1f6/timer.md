@@ -146,6 +146,7 @@ private void Start()
 
 ### OpenVR の Texture_t 型を作成
 Texture_t 型の変数を作成してネイティブテクスチャのポインタを設定します。
+
 ```diff cs:WatchOverlay.cs
 private void Update()
 {
@@ -154,31 +155,53 @@ private void Update()
 +   var texture = new Texture_t
 +   {
 +       eColorSpace = EColorSpace.Auto,
++       eType = ETextureType.DirectX
 +       handle = nativeTexturePtr
 +   };
-+   switch (SystemInfo.graphicsDeviceType)
-+   {
-+       case GraphicsDeviceType.Direct3D11:
-+       case GraphicsDeviceType.Direct3D12:
-+           texture.eType = ETextureType.DirectX;
-+           break;
-+       case GraphicsDeviceType.OpenGLES2:
-+       case GraphicsDeviceType.OpenGLES3:
-+       case GraphicsDeviceType.OpenGLCore:
-+           texture.eType = ETextureType.OpenGL;
-+           break;
-+       case GraphicsDeviceType.Vulkan:
-+           texture.eType = ETextureType.Vulkan;
-+           break;
-+   }
-
 }
+```
+
+:::details DirectX 以外に対応させる場合
+このチュートリアルを作成している環境では、デフォルトで DirectX が Unity のネイティブグラフィック API として使用されています。
+Unity が実際に使用している API の種類は `SystemInfo.graphicsDeviceType` で判定できるので、DirectX 以外の API が使われている場合に対応させる場合は、例えば下記のように値を渡します。
+```cs
+switch (SystemInfo.graphicsDeviceType)
+{
+    case GraphicsDeviceType.Direct3D11:
+        texture.eType = ETextureType.DirectX;
+        break;
+    case GraphicsDeviceType.Direct3D12:
+        texture.eType = ETextureType.DirectX12;
+        break;
+    case GraphicsDeviceType.OpenGLES2:
+    case GraphicsDeviceType.OpenGLES3:
+    case GraphicsDeviceType.OpenGLCore:
+        texture.eType = ETextureType.OpenGL;
+        break;
+    case GraphicsDeviceType.Vulkan:
+        texture.eType = ETextureType.Vulkan;
+        break;
+}
+```
+:::
+
+### サイズの調整
+サイズが大きいので 25cm にします。
+```diff cs:WatchOverlay.cs
+rivate void Start()
+
+   InitOpenVR();
+   overlayHandle = CreateOverlay("WatchOverlayKey", "WatchOverlay");
+   renderTexture = new RenderTexture(512, 512, 16, QualitySettings.activeColorSpace == ColorSpace.Linear ? RenderTextureFormat.ARGBFloat : RenderTextureFormat.ARGB32);
+   camera.targetTexture = renderTexture;
++  SetOverlaySize(overlayHandle, 0.2f);
+   ShowOverlay(overlayHandle);
 
 ```
 
 ### オーバーレイにテキスチャを書き込む
 [SetOverlayTexture()](https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.CVROverlay.html#Valve_VR_CVROverlay_SetOverlayTexture_System_UInt64_Valve_VR_Texture_t__) で、ネイティブテクスチャをオーバーレイに書き込むことができます。（詳細は [Wiki](https://github.com/ValveSoftware/openvr/wiki/IVROverlay::SetOverlayTexture)）
-先ほど作成した texture を `SetOverlayTexture()` に渡します。
+先ほど作成した texture の参照を `SetOverlayTexture()` に渡します
 
 ```diff cs:WatchOverlay.cs
 private void Update()
@@ -188,23 +211,9 @@ private void Update()
     var texture = new Texture_t
     {
         eColorSpace = EColorSpace.Auto,
+        eType = ETextureType.DirectX,
         handle = nativeTexturePtr
     };
-    switch (SystemInfo.graphicsDeviceType)
-    {
-        case GraphicsDeviceType.Direct3D11:
-        case GraphicsDeviceType.Direct3D12:
-            texture.eType = ETextureType.DirectX;
-            break;
-        case GraphicsDeviceType.OpenGLES2:
-        case GraphicsDeviceType.OpenGLES3:
-        case GraphicsDeviceType.OpenGLCore:
-            texture.eType = ETextureType.OpenGL;
-            break;
-        case GraphicsDeviceType.Vulkan:
-            texture.eType = ETextureType.Vulkan;
-            break;
-    }
 
 +   var error = OpenVR.Overlay.SetOverlayTexture(overlayHandle, ref texture);
 +   if (error != EVROverlayError.None)
@@ -218,15 +227,107 @@ private void Update()
 カメラの映像がリアルタイムにオーバーレイに表示されていることを確認してください。
 
 :::details レンダリングスレッドの同期について
-GetNativeTexturePtr() のドキュメントには、マルチスレッドの使用時にレンダリングスレッドとの同期を行うため、初期化時に一度だけ呼び出すことが推奨されています。
-しかし、オーバーレイへの描画はレンダリングスレッドと同期した状態で描画しなければ、動作が不安定になりクラッシュすることがあるため、敢えて Update() 内で GetNativeTexturePtr() を呼び出しています。
+[GetNativeTexturePtr()](https://docs.unity3d.com/ScriptReference/Texture.GetNativeTexturePtr.html) のドキュメントでは、GetNativeTexturePtr() は初期化時に一度だけ呼び出すことが推奨されています。
+オーバーレイへの描画は、メインスレッドとレンダリングスレッドが同期した状態でなければクラッシュすることがあるため、スレッドの同期のために Update() 内で GetNativeTexturePtr() を呼び出しています。
 :::
 
-:::details 上下が逆になっている場合
-OpenGL と DirectX の座標系
-https://tech.drecom.co.jp/knowhow-about-unity-coordinate-system/
+![](/images/incorrect-direction.jpg)
 
+### 上下を反転させる
+テクスチャの上下が反転しているので、逆向きにします。
+逆向きになっているのは OpenGL と DirectX の UV 座標系の違いによるものです。
+
+https://docs.unity3d.com/ja/current/Manual/SL-PlatformDifferences.html
+
+Overlay に描画するテクスチャの範囲を UV 座標系で指定できるので、縦方向(V軸)を逆にします。
+`SetOverlayTextureBounds()` と `VRTextureBounds_t` 型でテクスチャの UV を指定できます。
+デフォルトでは vMin = 0, vMax = 1 ですが、縦方向を逆にするため vMin = 1, vMax = 0 を渡します。
+
+```diff cs:WatchOverlay.cs
+private void Update()
+{
+    var leftControllerIndex = OpenVR.System.GetTrackedDeviceIndexForControllerRole(ETrackedControllerRole.LeftHand);
+    if (leftControllerIndex != OpenVR.k_unTrackedDeviceIndexInvalid)
+    {
+        var position = new Vector3(x, y, z);
+        var rotation = Quaternion.Euler(rotationX, rotationY, rotationZ);
+        SetOverlayTransformRelative(overlayHandle, leftControllerIndex, position, rotation);
+    }
+    
+    var nativeTexturePtr = renderTexture.GetNativeTexturePtr();
+    var texture = new Texture_t
+    {
+        eColorSpace = EColorSpace.Auto,
+        eType = ETextureType.DirectX,
+        handle = nativeTexturePtr
+    };
+
++   var bounds = new VRTextureBounds_t
++   {
++       uMin = 0,
++       uMax = 1,
++       vMin = 1,
++       vMax = 0
++   };
++   var error = OpenVR.Overlay.SetOverlayTextureBounds(overlayHandle, ref bounds);
++   if (error != EVROverlayError.None)
++   {
++       throw new Exception($"テクスチャの反転に失敗しました({error})");
++   }
+
+-    var error = OpenVR.Overlay.SetOverlayTexture(overlayHandle, ref texture);
++    error = OpenVR.Overlay.SetOverlayTexture(overlayHandle, ref texture);
+    if (error != EVROverlayError.None)
+    {
+        throw new Exception($"テクスチャの描画に失敗しました({error})");
+    }
+}
+```
+
+:::details DirectX 以外に対応させる場合
+今回はデフォルトで DirectX が使われているため、必ず上下を反転させています。
+Unity が使用しているグラフィックス API に合わせて処理する場合は、先程の `graphicsDeviceType` を使用できます。
+```cs
+switch (SystemInfo.graphicsDeviceType)
+{
+    case GraphicsDeviceType.Direct3D11:
+        texture.eType = ETextureType.DirectX;
+        break;
+    case GraphicsDeviceType.Direct3D12:
+        texture.eType = ETextureType.DirectX12;
+        break;
+    case GraphicsDeviceType.OpenGLES2:
+    case GraphicsDeviceType.OpenGLES3:
+    case GraphicsDeviceType.OpenGLCore:
+        texture.eType = ETextureType.OpenGL;
+        break;
+    case GraphicsDeviceType.Vulkan:
+        texture.eType = ETextureType.Vulkan;
+        break;
+}
+
+var bounds = new VRTextureBounds_t();
+switch (nativeTexture.eType)
+{
+    case ETextureType.OpenGL:
+        bounds.uMin = 0;
+        bounds.vMin = 0;
+        bounds.uMax = 1;
+        bounds.vMax = 1;
+        break;
+    case ETextureType.DirectX:
+        bounds.uMin = 0;
+        bounds.vMin = 1;
+        bounds.uMax = 1;
+        bounds.vMax = 0;
+        break;
+}
+```
 :::
+
+これで上下が反転します。
+![](/images/correct-direction.jpg)
+
 
 ## 時刻を表示する Canvas を作る
 Cube と Directional Light は使わないので削除します。
@@ -247,10 +348,6 @@ Text の Alignment でテキストの縦横の位置を中央に揃えます。
 
 Camera の Background で Alpha を 0 にして、カメラの背景を透明にします。
 これで数字だけが描画されるようになります。
-
-## 大きさの調整
-プログラムを実行して、左手に Canvas が表示されることを確認します。
-ちょうどいい大きさになるようにテキストの大きさなどを調整してください。
 
 ## 時計を動かす
 スクリプト Watch.cs を新規作成します。
