@@ -10,8 +10,7 @@ allow_override: true
 toc_depth: 2
 chapters:
   - "introduction"
-  - "project-setup"
-  - "openvr"
+  - "create-project"
   - "initialize"
   - "create-overlay"
   - "image-file"
