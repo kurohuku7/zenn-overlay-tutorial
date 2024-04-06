@@ -6,9 +6,9 @@ free: false
 オーバーレイの大きさと位置を変更してみます。
 
 ## オーバーレイの大きさ
-オーバーレイの大きさは [SetOverlayWidthinMeters()](https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.CVROverlay.html#Valve_VR_CVROverlay_SetOverlayWidthInMeters_System_UInt64_System_Single_) で設定できます。（詳細は [Wiki](https://github.com/ValveSoftware/openvr/wiki/IVROverlay::SetOverlayWidthInMeters)）
-引数はオーバーレイハンドルと、横幅（m 単位）です。高さは画像のアスペクト比に合わせて自動的に計算されます。
-オーバーレイの横幅を 0.5 m に変更してみます。
+オーバーレイの大きさは [SetOverlayWidthinMeters()](https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.CVROverlay.html#Valve_VR_CVROverlay_SetOverlayWidthInMeters_System_UInt64_System_Single_) で設定します。（詳細は [Wiki](https://github.com/ValveSoftware/openvr/wiki/IVROverlay::SetOverlayWidthInMeters) を参照）
+横幅は m 単位です。高さは画像のアスペクト比に合わせて自動的に計算されます。
+試しにオーバーレイの横幅を 0.5 m に変更してみます。
 
 ```diff cs:WatchOverlay.cs
 private void Start()
@@ -33,8 +33,13 @@ private void Start()
 ![](/images/small-overlay.jpg)
 
 ## オーバーレイの表示位置
-オーバーレイを VR 空間内の指定した位置に固定表示してみます。
-SteamVR のプレイエリアの原点（床の中心）を基準とする [SetOverlayTransform()](https://github.com/ValveSoftware/openvr/wiki/IVROverlay::SetOverlayTransformAbsolute) を使います。（詳細は [Wiki](https://github.com/ValveSoftware/openvr/wiki/IVROverlay::SetOverlayTransformAbsolute)）
+オーバーレイを VR 空間内の指定した位置に表示してみます。
+オーバーレイを空間内の特定の位置に固定表示する場合は [SetOverlayTransformAbsolute()](https://github.com/ValveSoftware/openvr/wiki/IVROverlay::SetOverlayTransformAbsolute) を使います。（詳細は [Wiki](https://github.com/ValveSoftware/openvr/wiki/IVROverlay::SetOverlayTransformAbsolute)）
+
+### 固定位置に表示
+プレイエリアの中心を基準として、正面方向に 3 m、上方向に 2 m にして、オーバーレイを Z 軸周りに 45 度回転させてみます。
+
+**※ TODO:図を追加**
 
 
 ```cs
@@ -52,18 +57,13 @@ EVROverlayError SetOverlayTransformAbsolute(ulong ulOverlayHandle, ETrackingUniv
 ### pmatTrackingOriginOverlayTransform
 `HmdMatrix34_t pmatTrackingOriginToOverlayTransform` が原点からの変形を表す変換行列です。
 
-SteamVR Unity Plugin に position (Vector3) と rotation (Quarternion) から HmdMatrix34_t の変換行列を作るユーティリティが入っているので、今回はこちらを使います。
+SteamVR Plugin に position (Vector3) と rotation (Quarternion) から HmdMatrix34_t の変換行列を作るユーティリティが入っているので、今回はこちらを使います。
 
 :::details 変換行列とは？
 https://qiita.com/suzuryo3893/items/9e543cdf8bc64dc7002a
 
 :::
 
-
-### 固定位置に表示
-プレイエリアの中心を基準として、正面方向に 3 m、上方向に 2 m にして、オーバーレイを Z 軸周りに 45 度回転させてみます。
-
-※ 図を追加
 
 :::details 左手系と右手系
 Unity は左手系、OpenVR は右手系で座標系が異なります。
@@ -135,7 +135,7 @@ public class WatchOverlay : MonoBehaviour
 -       {
 -           throw new Exception("オーバーレイのサイズ設定に失敗しました: " + error);
 -       }
-   
+        
         // Y 軸方向に 2 m, Z 軸方向 3 m
         var position = new Vector3(0, 2, 3);
 
@@ -158,6 +158,7 @@ public class WatchOverlay : MonoBehaviour
 
     ～省略～
 
++   // overlayHandle -> handle に変数名を変更
 +   private void SetOverlaySize(ulong handle, float size)
 +   {
 +       var error = OpenVR.Overlay.SetOverlayWidthInMeters(handle, size);
@@ -194,10 +195,10 @@ public class WatchOverlay : MonoBehaviour
 -       // Y 軸方向に 2 m, Z 軸方向 3 m
 -       var position = new Vector3(0, 2, 3);
 -
--       // Z 軸周りに 45 度
+-       // Z 軸周りに 45 度回転
 -       var rotation = Quaternion.Euler(0, 0, 45);
 -
--       // ユーティリティを使って変換行列を作成
+-       // 変換行列を作成
 -       var rigidTransform = new SteamVR_Utils.RigidTransform(position, rotation);
 -       var matrix = rigidTransform.ToHmdMatrix34();
 -
