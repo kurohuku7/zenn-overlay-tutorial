@@ -3,31 +3,25 @@ title: "デバイスに追従させる"
 free: false
 ---
 
-HMD やコントローラにオーバーレイをくっつけてみます。
-まずは HMD に追従させてみます。
-
 ## HMD に追従させる
 ![](/images/relative-transform-hmd.gif)
 *HMD に追従するオーバーレイ*
 
-相対位置の指定では関数 [SetOverlayTransformTrackedDeviceRelative()](https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.CVROverlay.html#Valve_VR_CVROverlay_SetOverlayTransformTrackedDeviceRelative_System_UInt64_System_UInt32_Valve_VR_HmdMatrix34_t__) を使用します。（詳細は [Wiki](https://github.com/ValveSoftware/openvr/wiki/IVROverlay::SetOverlayTransformTrackedDeviceRelative)）
-
 ### Device Index
-どのデバイスを基準にするかは、接続されているデバイスを識別するための番号 (Device Index) で指定します。
+どのデバイスに追従させるかは、接続されているデバイスを識別するための番号 (Device Index) で指定します。
 HMD の場合は [OpenVR.k_unTrackedDeviceIndex_Hmd](https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.OpenVR.html#Valve_VR_OpenVR_k_unTrackedDeviceIndex_Hmd) の定数で定義されていて 0 で固定です。
 
 :::details OpenVR 内のコードを確認
 https://github.com/ValveSoftware/openvr/blob/v2.5.1/headers/openvr.h#L251-L256
 :::
 
-### 固定位置表示を削除
-前のページで作成した、VR 空間内の固定位置への表示は削除します。
+### 固定位置表示のコードを削除
+前のページで作成した、空間内の固定位置への表示のコードは削除します。
 ```diff cs:WatchOverlay.cs
 private void Start()
 {
     InitOpenVR();
     overlayHandle = CreateOverlay("WatchOverlayKey", "WatchOverlay");
-    SetOverlaySize(overlayHandle, 0.5f);
 
 -   var position = new Vector3(0, 2, 3);
 -   var rotation = Quaternion.Euler(0, 0, 45);
@@ -35,21 +29,24 @@ private void Start()
 
     var filePath = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg");
     SetOverlayFromFile(overlayHandle, filePath);
-    
+
+    SetOverlaySize(overlayHandle, 0.5f);
+
     ShowOverlay(overlayHandle);
 } 
 ```
 
 ### HMD を基準とした相対位置を指定
 HMD の正面 2m 先にオーバーレイを表示してみます。
-基準となるデバイスの番号と、デバイスの位置を基準とした変換行列を渡します。
+相対位置の指定では [SetOverlayTransformTrackedDeviceRelative()](https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.CVROverlay.html#Valve_VR_CVROverlay_SetOverlayTransformTrackedDeviceRelative_System_UInt64_System_UInt32_Valve_VR_HmdMatrix34_t__) を使用します。（詳細は [Wiki](https://github.com/ValveSoftware/openvr/wiki/IVROverlay::SetOverlayTransformTrackedDeviceRelative) を参照）
+基準となるデバイスの番号と、変換行列を渡します。
+
 
 ```diff cs:WatchOverlay.cs
 private void Start()
 {
     InitOpenVR();
     overlayHandle = CreateOverlay("WatchOverlayKey", "WatchOverlay");
-    SetOverlaySize(overlayHandle, 0.5f);
 
 +   var position = new Vector3(0, 0, 2);
 +   var rotation = Quaternion.Euler(0, 0, 0);
@@ -63,7 +60,9 @@ private void Start()
 
     var filePath = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg");
     SetOverlayFromFile(overlayHandle, filePath);
-    
+
+    SetOverlaySize(overlayHandle, 0.5f);
+
     ShowOverlay(overlayHandle);
 } 
 ```
@@ -71,14 +70,13 @@ private void Start()
 プログラムを実行して、HMD の正面に常にオーバーレイが表示されることを確認します。
 
 ### コード整理
-`SetOverlayTransformRelative()` として相対位置指定を関数に分けておきます。
+`SetOverlayTransformRelative()` として関数に分けておきます。
 
 ```diff cs:WatchOverlay.cs
 private void Start()
 {
     InitOpenVR();
     overlayHandle = CreateOverlay("WatchOverlayKey", "WatchOverlay");
-    SetOverlaySize(overlayHandle, 0.5f);
 
     var position = new Vector3(0, 0, 2);
     var rotation = Quaternion.Euler(0, 0, 0);
@@ -93,16 +91,22 @@ private void Start()
 
     var filePath = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg");
     SetOverlayFromFile(overlayHandle, filePath);
-    
+
+    SetOverlaySize(overlayHandle, 0.5f);
+
     ShowOverlay(overlayHandle);
 } 
 
 ～省略～
 
++ // overlayHandle -> handle に変数名を変更
++ // deviceIndex を引数で指定するように変更
 + private void SetOverlayTransformRelative(ulong handle, uint deviceIndex, Vector3 position, Quaternion rotation)
 + {
 +     var rigidTransform = new SteamVR_Utils.RigidTransform(position, rotation);
 +     var matrix = rigidTransform.ToHmdMatrix34();
++
++     // OpenVR.k_unTrackedDeviceIndex_Hmd -> deviceIndex に変更
 +     var error = OpenVR.Overlay.SetOverlayTransformTrackedDeviceRelative(handle, deviceIndex, ref matrix);
 +     if (error != EVROverlayError.None)
 +     {
@@ -115,16 +119,15 @@ private void Start()
 ![](/images/controller-tracked-overlay.gif)
 *コントローラに追従するオーバーレイ*
 
-`SetOverlayTransformTrackedDeviceRelative()` に、コントローラの Devce Index を与えれば、コントローラを基準にした位置指定ができます。
+HMD の代わりにコントローラの Devce Index を指定すれば、コントローラに追従するオーバーレイが作れます。
 
-### HMD の位置指定を削除
-HMD を基準とした位置指定は削除します。
+### HMD への追従を削除
+HMD を基準とした位置指定を削除します。
 ```diff cs:WatchOverlay.cs
 private void Start()
 {
     InitOpenVR();
     overlayHandle = CreateOverlay("WatchOverlayKey", "WatchOverlay");
-    SetOverlaySize(overlayHandle, 0.5f);
 
 -   var position = new Vector3(0, 0, 2);
 -   var rotation = Quaternion.Euler(0, 0, 0);
@@ -132,14 +135,38 @@ private void Start()
 
     var filePath = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg");
     SetOverlayFromFile(overlayHandle, filePath);
-    
+
+    SetOverlaySize(overlayHandle, 0.5f);
+
     ShowOverlay(overlayHandle);
 }
 ```
 
-### Device Index の取得
+### コントローラの Device Index の取得
 コントローラの Device Index は [GetTrackedDeviceIndexForControllerRole()](https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.CVRSystem.html#Valve_VR_CVRSystem_GetTrackedDeviceIndexForControllerRole_Valve_VR_ETrackedControllerRole_) で取得できます。
-左手のコントローラを取得するなら `ETrackedControllerRole.LeftHand`、右手なら `EtrackedControllerRole.RightHand` を渡します。
+
+```diff cs:WatchOverlay.cs
+private void Start()
+{
+    InitOpenVR();
+    overlayHandle = CreateOverlay("WatchOverlayKey", "WatchOverlay");
+
++   var leftControllerIndex = OpenVR.System.GetTrackedDeviceIndexForControllerRole(ETrackedControllerRole.LeftHand);
+
+    var filePath = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg");
+    SetOverlayFromFile(overlayHandle, filePath);
+
+    SetOverlaySize(overlayHandle, 0.5f);
+
+    ShowOverlay(overlayHandle);
+}
+```
+
+引数は、
+左手のコントローラなら `ETrackedControllerRole.LeftHand`
+右手のコントローラなら `EtrackedControllerRole.RightHand`
+です。
+
 コントローラが接続されていない場合など、取得に失敗すると `k_unTrackedDeviceIndexInvalid` が返ってきます。
 
 :::details OpenVR のヘッダファイルを確認
@@ -147,34 +174,17 @@ https://github.com/ValveSoftware/openvr/blob/v2.5.1/headers/openvr.h#L2344-L2345
 https://github.com/ValveSoftware/openvr/blob/v2.5.1/headers/openvr.h#L272-L282
 :::
 
-左手のコントローラの番号を取得するコードを追加します。
-```diff cs:WatchOverlay.cs
-private void Start()
-{
-    InitOpenVR();
-    overlayHandle = CreateOverlay("WatchOverlayKey", "WatchOverlay");
-    SetOverlaySize(overlayHandle, 0.5f);
-
-+   var leftControllerIndex = OpenVR.System.GetTrackedDeviceIndexForControllerRole(ETrackedControllerRole.LeftHand);
-
-    var filePath = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg");
-    SetOverlayFromFile(overlayHandle, filePath);
-    
-    ShowOverlay(overlayHandle);
-}
-```
-
 
 ### コントローラに追従させる
 コントローラの Z 軸方向 2 m 先にオーバーレイを表示してみます。
-HMD の代わりに、コントローラのデバイス番号を渡します。
+先ほど作成した `SetOverlayTransformRelative()` を使います。
+引数として HMD の代わりに、コントローラの Device Index を渡します。
 
 ```diff cs:WatchOverlay.cs
 private void Start()
 {
     InitOpenVR();
     overlayHandle = CreateOverlay("WatchOverlayKey", "WatchOverlay");
-    SetOverlaySize(overlayHandle, 0.5f);
 
     var leftControllerIndex = OpenVR.System.GetTrackedDeviceIndexForControllerRole(ETrackedControllerRole.LeftHand);
 +   if (leftControllerIndex != OpenVR.k_unTrackedDeviceIndexInvalid)
@@ -186,18 +196,25 @@ private void Start()
 
     var filePath = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg");
     SetOverlayFromFile(overlayHandle, filePath);
-    
+
+    SetOverlaySize(overlayHandle, 0.5f);
+
     ShowOverlay(overlayHandle);
 }
 ```
 
-SteamVR 上で左手のコントローラが接続されていることを確認してから、プログラムを実行してください。
+**SteamVR 上で左手のコントローラが認識されていることを確認してから**、プログラムを実行してください。
+
+![](/images/left-controller-connected.png)
+
 HMD の代わりに、コントローラに追従してオーバーレイが表示されるようになっているはずです。
 
+![](/images/controller-tracked-overlay.gif)
+*コントローラに追従するオーバーレイ*
 
 ## 位置の調整
 
-時計アプリを作るため、左手首の位置にオーバーレイが来るように調整します。
+時計アプリを作るため、左手首にオーバーレイが来るように位置を調整します。
 プログラムを実行しながら Unity 上でパラメータを調整できるようにしてみます。
 
 ### メンバの作成
@@ -219,18 +236,19 @@ public class WatchOverlay : MonoBehaviour
 
     ～省略～
 ```
+
+インスペクタにスライダーが表示されます。
+
 ![](/images/inspector-overlay-position.png)
 
 
 ### 大きさと位置を差し替え
-作成したメンバを使うように変更します。
+大きさと位置指定のパラメータを、今追加した変数に差し替えます。
 ```diff cs:WatchOverlay.cs
 private void Start()
 {
     InitOpenVR();
     overlayHandle = CreateOverlay("WatchOverlayKey", "WatchOverlay");
--   SetOverlaySize(overlayHandle, 0.5f);
-+   SetOverlaySize(overlayHandle, size);
 
     var leftControllerIndex = OpenVR.System.GetTrackedDeviceIndexForControllerRole(ETrackedControllerRole.LeftHand);
     if (leftControllerIndex != OpenVR.k_unTrackedDeviceIndexInvalid)
@@ -247,14 +265,16 @@ private void Start()
     var filePath = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg");
     SetOverlayFromFile(overlayHandle, filePath);
 
+-   SetOverlaySize(overlayHandle, 0.5f);
++   SetOverlaySize(overlayHandle, size);
+
     ShowOverlay(overlayHandle);
 }
 ```
 
-### Update() に処理を追加
-現在は Start() で処理しているため、起動時に一度だけ大きさと位置が設定されます。
-Update() でも処理するようにして、実行中に変更した値が反映されるようにします。
-※ これはオーバーレイの表示位置を調整するためのもので、調整後に削除します。
+### Update() で大きさと位置を更新
+Update() に大きさと位置の更新を追加して、実行しながら値の調整ができるようにします。
+※ これは表示位置を調整するためのコードで、後で削除します。
 ```diff cs:WatchOverlay.cs
 ～省略～
 
@@ -274,21 +294,22 @@ Update() でも処理するようにして、実行中に変更した値が反�
 ～省略～
 ```
 
-プログラムを実行した状態で、インスペクタのスライダーを動かすと、オーバーレイに反映されることを確認してください。
+プログラムを実行した状態で、インスペクタのスライダーを動かすと、リアルタイムに変更が反映されることを確認します。
+![](/images/adjusting-overlay.jpg)
 
 ### 位置の調整
-左手首の位置にオーバーレイが来るように、各メンバの値を調整してください。
+左手首の位置にオーバーレイが来るように、スライダーを調整してください。
 VR 内で SteamVR のダッシュボードを開き、デスクトップ画面を表示して、VR 内から直接 Unity のスライダーを操作すると調整しやすいかと思います。
 ![](/images/steamvr-dashboard-unity-window.jpg)
 ![](/images/adjust-in-vr.gif)
 *SteamVR ダッシュボードから Unity を操作*
 
-他には SteamVR のメニューから Display VR View で HMD の映像を表示することもできます。
+他には SteamVR のメニューから "Display VR View" で HMD の映像を確認しながら、デスクトップで調整することもできます。
 ![](/images/display-overlay-view-menu.png)
 ![](/images/adjust-with-vrview.gif)
 *HMD を被りたくないときはこれで*
 
-調整できたら、**プログラムを終了させずに**インスペクタの各パラメータの数値をメモしておいてください。
+調整できたら、**プログラムを終了させずに**各パラメータの数値をメモしてください。
 ```
 パラメータの例
 size = 0.08
@@ -300,62 +321,74 @@ rotationY = 262
 rotationZ = 0
 ```
 
-プログラムを終了させたら、メモした値をインスペクタに入力します。
+プログラムを終了させた後、メモした値をインスペクタに再度入力します。
 ![](/images/set-overlay-position-inspector.png)
 
-プログラムを実行して、左手首にオーバーレイが表示されていれば OK です。
+プログラムを実行して、調整した位置にオーバーレイが表示されていれば OK です。
 ![](/images/overlay-fixed-position.jpg)
 
-### Update() の削除
+### 調整用のコードを削除
 パラメータを調整するために追加した `Update()` 内の処理を削除します。
 ```diff cs:WatchOverlay.cs
 private void Update()
 {
--     SetOverlaySize(overlayHandle, size);
-- 
--     var leftControllerIndex = OpenVR.System.GetTrackedDeviceIndexForControllerRole(ETrackedControllerRole.LeftHand);
--     var position = new Vector3(x, y, z);
--     var rotation = Quaternion.Euler(rotationX, rotationY, rotationZ); 
--     SetOverlayTransformRelative(overlayHandle, leftControllerIndex, position, rotation);
+-   SetOverlaySize(overlayHandle, size);
+-   
+-   var leftControllerIndex = OpenVR.System.GetTrackedDeviceIndexForControllerRole(ETrackedControllerRole.LeftHand);
+-   if (leftControllerIndex != OpenVR.k_unTrackedDeviceIndexInvalid)
+-   {
+-       var position = new Vector3(x, y, z);
+-       var rotation = Quaternion.Euler(rotationX, rotationY, rotationZ); 
+-       SetOverlayTransformRelative(overlayHandle, leftControllerIndex, position, rotation);
+-   }
 }
 ```
 
 ## コントローラが接続されていない場合の対処
 
-現在は Start() でコントローラの Device Index を取得しているため、起動時にコントローラが接続されている必要があります。
-実行中にコントローラが接続・切断される場合に備えて、Device Index 取得と位置指定の処理を Update() の中に移動しておきます。
+現在はプログラムの起動時にコントローラが接続されている必要があります。
+途中でコントローラが接続・切断される場合に対応するため、Device Index 取得、位置指定を Update() の中に移動します。
 
 ```diff cs:WatchOverlay.cs
     private void Start()
     {
         InitOpenVR();
         overlayHandle = CreateOverlay("WatchOverlayKey", "WatchOverlay");
-        SetOverlaySize(overlayHandle, size);
 
 -       var leftControllerIndex = OpenVR.System.GetTrackedDeviceIndexForControllerRole(ETrackedControllerRole.LeftHand);
--       var position = new Vector3(x, y, z);
--       var rotation = Quaternion.Euler(rotationX, rotationY, rotationZ);
--       SetOverlayTransformRelative(overlayHandle, leftControllerIndex, position, rotation);
+-       if (leftControllerIndex != OpenVR.k_unTrackedDeviceIndexInvalid)
+-       {
+-           var position = new Vector3(x, y, z);
+-           var rotation = Quaternion.Euler(rotationX, rotationY, rotationZ);
+-           SetOverlayTransformRelative(overlayHandle, leftControllerIndex, position, rotation);
+-       }
 
         var filePath = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg");
         SetOverlayFromFile(overlayHandle, filePath);
 
--       ShowOverlay(overlayHandle);
+        SetOverlaySize(overlayHandle, size);
+
+        ShowOverlay(overlayHandle);
     }
 
 +   private void Update()
 +   {
 +       var leftControllerIndex = OpenVR.System.GetTrackedDeviceIndexForControllerRole(ETrackedControllerRole.LeftHand);
-+       var position = new Vector3(x, y, z);
-+       var rotation = Quaternion.Euler(rotationX, rotationY, rotationZ);
-+       SetOverlayTransformRelative(overlayHandle, leftControllerIndex, position, rotation);
-+       ShowOverlay(overlayHandle);
++       if (leftControllerIndex != OpenVR.k_unTrackedDeviceIndexInvalid)
++       {           
++           var position = new Vector3(x, y, z);
++           var rotation = Quaternion.Euler(rotationX, rotationY, rotationZ);
++           SetOverlayTransformRelative(overlayHandle, leftControllerIndex, position, rotation);
++       }
 +   }
 ```
 
-:::details 毎フレーム取得するのはどうなの？
-今回はシンプルに Update() 内で毎回取得していますが、[VREvent_TrackedDeviceRoleChanged](https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.EVREventType.html) イベントを使ってデバイスが接続されたタイミングを検出することも可能です。
+これで途中でコントローラが接続・切断されても動作するようになります。
+
+:::details デバイスが接続されたことを検出できる？
+今回はシンプルに Update() 内で毎回取得していますが、[VREvent_TrackedDeviceRoleChanged](https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.EVREventType.html) イベントを使ってデバイスが接続されたことを検出することも可能です。
 :::
+
 
 ## 最終的なコード
 ```cs:WatchOverlay.cs
@@ -379,10 +412,11 @@ public class WatchOverlay : MonoBehaviour
     {
         InitOpenVR();
         overlayHandle = CreateOverlay("WatchOverlayKey", "WatchOverlay");
-        SetOverlaySize(overlayHandle, size);
         
         var filePath = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg");
         SetOverlayFromFile(overlayHandle, filePath);
+
+        SetOverlaySize(overlayHandle, size);
 
         ShowOverlay(overlayHandle);
     }
