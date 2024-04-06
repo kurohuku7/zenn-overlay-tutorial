@@ -3,30 +3,24 @@ title: "画像ファイルの表示"
 free: false
 ---
 
-オーバーレイに画像を描画してみましょう。
-
 ## 画像ファイルの準備
 下記の条件の画像ファイルを準備してください。
 
-- 大きさが 1920 x 1080 以内
-- PNG, JPG, TGA 形式（24 or 32 ビットカラー）
+- 大きさ 1920 x 1080 以内
+- PNG, JPG, TGA 形式（24 or 32 ビットカラー）のいずれか
 
-ここではサンプルとして zenn のプロフィール画像を使ってみます。
+以降のサンプルでは zenn のプロフィール画像を使って解説します。
 ![](/images/sns-icon.jpg =100x)
 
 ## 画像ファイルの設置
-Unity で `Assets` フォルダの下に `StreamingAssets` フォルダを作ります。
-用意した画像を `StreamingAssets` フォルダに追加します。
-サンプルでは `sns-icon.jpg` という名前にしています。
+用意した画像を `Assets/StreamingAssets` フォルダに追加します。
 
 ![](/images/add-image-file.png)
 
+ここでは `sns-icon.jpg` という名前で保存しています。
 
 ## 画像の描画
-画像ファイルの描画には [SetOverlayFromFile()](https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.CVROverlay.html#Valve_VR_CVROverlay_SetOverlayFromFile_System_UInt64_System_String_) を使用します。詳細は [Wiki](https://github.com/ValveSoftware/openvr/wiki/IVROverlay::SetOverlayFromFile) を参照。
-
-引数はオーバーレイハンドルと画像ファイルパスです。
-エラーがなければ `EVROverlayError.None` が返ります。
+画像ファイルの描画には [SetOverlayFromFile()](https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.CVROverlay.html#Valve_VR_CVROverlay_SetOverlayFromFile_System_UInt64_System_String_) を使用します。（詳細は [Wiki](https://github.com/ValveSoftware/openvr/wiki/IVROverlay::SetOverlayFromFile) を参照）
 
 ```diff cs:WatchOverlay.cs
 void Start()
@@ -35,7 +29,7 @@ void Start()
     overlayHandle = CreateOverlay("WatchOverlayKey", "WatchOverlay");
 
 +   var filePath = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg");
-+   error = OpenVR.Overlay.SetOverlayFromFile(overlayHandle, filePath);
++   var error = OpenVR.Overlay.SetOverlayFromFile(overlayHandle, filePath);
 +   if (error != EVROverlayError.None)
 +   {
 +       throw new Exception("画像ファイルの描画に失敗しました: " + error);
@@ -43,17 +37,19 @@ void Start()
 }
 ```
 
+エラーがなければ `EVROverlayError.None` が返ります。
 [StreamingAssets](https://docs.unity3d.com/Manual/StreamingAssets.html) を使用したのは、[Application.streamingAssetsPath](https://docs.unity3d.com/ScriptReference/Application-streamingAssetsPath.html) で画像ファイルパスを取得するためです。
 
-プログラムを実行後、Overlay Viewer オーバーレイを確認します。
-正常に動作していれば、で WatchOverlayKey に画像が描画されているはずです。
+プログラムを実行後、Overlay Viewer でオーバーレイを確認します。
+WatchOverlayKey のプレビューに画像が描画されています。
 ![](https://storage.googleapis.com/zenn-user-upload/c7cc3e4edf39-20240306.png)
 
 
 ## 表示状態の切り替え
-Overlay Viewer には表示されていますが、VR 内には表示されていません。
-オーバーレイはデフォルトで非表示になっているため、表示状態を切り替える必要があります。
-表示状態の切り替えは [Wiki](https://github.com/ValveSoftware/openvr/wiki/IVROverlay::ShowOverlay) の通り [ShowOverlay()](https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.CVROverlay.html#Valve_VR_CVROverlay_ShowOverlay_System_UInt64_) と [HideOverlay()](https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.CVROverlay.html#Valve_VR_CVROverlay_HideOverlay_System_UInt64_) で行います。
+VR 内にオーバーレイを表示します。
+オーバーレイはデフォルトで非表示状態になっています。
+表示状態の切り替えは [ShowOverlay()](https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.CVROverlay.html#Valve_VR_CVROverlay_ShowOverlay_System_UInt64_) と [HideOverlay()](https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.CVROverlay.html#Valve_VR_CVROverlay_HideOverlay_System_UInt64_) を使います。（詳細は [Wiki](https://github.com/ValveSoftware/openvr/wiki/IVROverlay::ShowOverlay) を参照）
+Start() に ShowOverlay() を追加します。
 
 ```diff cs:WatchOverlay.cs
 private void Start()
@@ -61,12 +57,12 @@ private void Start()
     InitOpenVR();
     overlayHandle = CreateOverlay("WatchOverlayKey", "WatchOverlay");
 
-   var filePath = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg");
-   var error = OpenVR.Overlay.SetOverlayFromFile(overlayHandle, filePath);
-   if (error != EVROverlayError.None)
-   {
-       throw new Exception("画像ファイルの描画に失敗しました: " + error);
-   }
+    var filePath = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg");
+    var error = OpenVR.Overlay.SetOverlayFromFile(overlayHandle, filePath);
+    if (error != EVROverlayError.None)
+    {
+        throw new Exception("画像ファイルの描画に失敗しました: " + error);
+    }
 
 +   error = OpenVR.Overlay.ShowOverlay(overlayHandle);
 +   if (error != EVROverlayError.None)
@@ -84,12 +80,13 @@ private void Start()
 
 
 ![](/images/overlay-in-game.jpg)
-*ゲームの起動中でも動作する。画像は [Legendary Tales](https://store.steampowered.com/app/1465070/Legendary_Tales/)。*
+*ゲームの起動中でも動作します（画像は [Legendary Tales](https://store.steampowered.com/app/1465070/Legendary_Tales/)）*
 
 ## コードの整理
 ### 画像ファイルの描画
 
 `SetOverlayFromFile()` として関数に分けておきます。
+
 
 ```diff cs:WatchOverlay.cs
 void Start()
@@ -97,13 +94,13 @@ void Start()
     InitOpenVR();
     overlayHandle = CreateOverlay("WatchOverlayKey", "WatchOverlay");
 
-+    var filePath = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg")
-+    SetOverlayFromFile(overlayHandle, filePath);
--    var error = OpenVR.Overlay.SetOverlayFromFile(overlayHandle, filePath);
--    if (error != EVROverlayError.None)
--    {
--        throw new Exception("画像ファイルの描画に失敗しました: " + error);
--    }
+    var filePath = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg")
+-   var error = OpenVR.Overlay.SetOverlayFromFile(overlayHandle, filePath);
+-   if (error != EVROverlayError.None)
+-   {
+-       throw new Exception("画像ファイルの描画に失敗しました: " + error);
+-   }
++   SetOverlayFromFile(overlayHandle, filePath);
 
     error = OpenVR.Overlay.ShowOverlay(overlayHandle);
     if (error != EVROverlayError.None)
@@ -114,6 +111,9 @@ void Start()
 
 ～省略～
 
++ // overlayHandle -> handle
++ // filePath -> path
++ // に変数名を変えています
 + private void SetOverlayFromFile(ulong handle, string path)
 + {
 +     var error = OpenVR.Overlay.SetOverlayFromFile(handle, path);
@@ -135,7 +135,6 @@ void Start()
 
     var filePath = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg")
     SetOverlayFromFile(overlayHandle, filePath);
-
 +   ShowOverlay(overlayHandle);
 -   error = OpenVR.Overlay.ShowOverlay(overlayHandle);
 -   if (error != EVROverlayError.None)
@@ -146,8 +145,10 @@ void Start()
 
 ～省略～
 
++ // overlayHandle -> handle に変数名を変えています
 + private void ShowOverlay(ulong handle)
 + {
++     // var を追加しています
 +     var error = OpenVR.Overlay.ShowOverlay(handle);
 +     if (error != EVROverlayError.None)
 +     {
@@ -174,7 +175,6 @@ public class WatchOverlay : MonoBehaviour
 
         var filePath = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg");
         SetOverlayFromFile(overlayHandle, filePath);
-
         ShowOverlay(overlayHandle);
     }
     
