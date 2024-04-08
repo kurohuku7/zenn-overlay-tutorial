@@ -59,16 +59,16 @@ EVROverlayError SetOverlayTransformAbsolute(ulong ulOverlayHandle, ETrackingUniv
 
 SteamVR Plugin に position (Vector3) と rotation (Quarternion) から HmdMatrix34_t の変換行列を作るユーティリティが入っているので、今回はこちらを使います。
 
-:::details 変換行列とは？
+:::details 変換行列
 https://qiita.com/suzuryo3893/items/9e543cdf8bc64dc7002a
 
 :::
 
 
 :::details 左手系と右手系
-Unity は左手系、OpenVR は右手系で座標系が異なります。
-OpenVR では +y が上、+x が右、-z が前方となります。
-Unity SteamVR Plugin のユーティリティが内部で座標系の変換を行うため、サンプルでは意識する必要がないですが、自前で変換行列を作成する場合は Z 軸の向きや回転の方向が逆になる点に注意が必要です。
+座標系は Unity が左手系、OpenVR が右手系です。
+OpenVR では +y が上、+x が右、-z が奥となります。
+SteamVR のユーティリティが内部で座標系の変換を行うため、ここでは意識する必要がないですが、自前で変換行列を作成する場合は Z 軸の向きや回転の方向が逆になる点に注意が必要です。
 :::
 
 

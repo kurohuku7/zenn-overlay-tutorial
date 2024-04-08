@@ -16,6 +16,7 @@ free: false
 - Unity 2022.3.20
 - SteamVR Unity Plugin v2.8.0
 - OpenVR v2.5.1
+- Windows 11
 
 ## 情報の正確性
 間違った情報が含まれている可能性があります。OpenVR のドキュメントやソースコードに書かれていない情報もあるため、結構手探りで API を使っていたりします。

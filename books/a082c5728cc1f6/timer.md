@@ -4,9 +4,11 @@ free: false
 ---
 
 オーバーレイに時刻をリアルタイムに表示してみます。
-画像ファイルの代わりに、Unity のカメラ映像をリアルタイムでオーバーレイに表示してみます。
+これまでは画像ファイルをオーバーレイに表示していましたが、カメラの映像をリアルタイムに表示できるようにしてみます。
 
 ## カメラ映像の準備
+
+時刻表示を作る前に、適当な 3D シーンのカメラ映像をオーバーレイに表示してみます。
 
 ### シーンの準備
 Unity のシーンに
@@ -15,13 +17,13 @@ Unity のシーンに
 - 3D Object → Cube
 - Light → Directional Light
 
-を追加します。
-カメラに Cube が映るように配置してください。
+を新規作成します。
+カメラに Cube が映るように、それぞれを配置してください。
 ![](/images/cube-scene.png)
 
 ### Cube を回転させる
-新規に C# スクリプト `Rotate.cs` を作成します。
-次のコードをコピーします。
+リアルタイムに動いているカメラ映像を作りたいので、Cube が回転するアニメーションを作ります。
+新規に `Scripts/Rotate.cs` を作成します。
 
 ```cs:Rotate.cs
 using UnityEngine;
@@ -35,21 +37,21 @@ public class Rotate : MonoBehaviour
 }
 ```
 
-作成したスクリプトを Cube オブジェクトに追加します。
+`Rotate.cs` を Cube オブジェクトに追加します。
 ![](/images/cube-rotate-component.png)
 
-プログラムを実行して Cube が回転することを確認してください。
+プログラムを実行して Cube が回転することを確認します。
 ![](/images/rotate-cube.gif)
 
 ### カメラの参照を追加
 
-`WatchOverlay.cs` にカメラの参照を追加します。
+`WatchOverlay.cs` にカメラの変数を作成します。
 
 ```diff cs:WatchOverlay.cs
 public class WatchOverlay : MonoBehaviour
 {
 +   public Camera camera;
-    
+
     private ulong overlayHandle = OpenVR.k_ulOverlayHandleInvalid;
 
     [Range(0, 0.5f)] public float size;
@@ -62,20 +64,21 @@ public class WatchOverlay : MonoBehaviour
 ...
 ```
 
-インスペクタで WatchOverlay の camera に、設置したカメラの参照を設定します。
+追加した変数に、シーン上のカメラを設定します。
 ![](/images/attach-camera.png)
 
 ### 画像ファイルのコードを削除
-画像ファイルの表示は使わないので削除します。
+画像ファイルは、もう使わないので処理を削除します。
 ```diff cs:WatchOverlay.cs
 private void Start()
 {
     InitOpenVR();
     overlayHandle = CreateOverlay("WatchOverlayKey", "WatchOverlay");
-    SetOverlaySize(overlayHandle, size);
     
 -   var filePath = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg");
 -   SetOverlayFromFile(overlayHandle, filePath);
+
+    SetOverlaySize(overlayHandle, size);
 
     ShowOverlay(overlayHandle);
 }
@@ -83,7 +86,7 @@ private void Start()
 
 
 ### RenderTexture の作成
-[RenderTexture](https://docs.unity3d.com/ja/2018.4/Manual/class-RenderTexture.html) を作成してカメラの描画先に設定します。
+[RenderTexture](https://docs.unity3d.com/ja/2018.4/Manual/class-RenderTexture.html) を作成して、カメラの映像が書き込まれるようにします。
 ```diff cs:WatchOverlay.cs
 public class WatchOverlay : MonoBehaviour
 {
@@ -104,7 +107,7 @@ public class WatchOverlay : MonoBehaviour
         InitOpenVR();
         overlayHandle = CreateOverlay("WatchOverlayKey", "WatchOverlay");
 
-+       renderTexture = new RenderTexture(512, 512, 16, QualitySettings.activeColorSpace == ColorSpace.Linear ? RenderTextureFormat.ARGBFloat : RenderTextureFormat.ARGB32);
++       renderTexture = new RenderTexture(512, 512, 16, RenderTextureFormat.ARGBFloat);
 +       camera.targetTexture = renderTexture;
         
         ShowOverlay(overlayHandle);
@@ -113,12 +116,21 @@ public class WatchOverlay : MonoBehaviour
     ～省略～
 ```
 
-これでカメラの映像が RenderTexture に書き込まれるようになります。
+カメラの targetTexture に renderTexture を設定することで、カメラの映像が renderTexture へ書き込まれるようになります。
+
+:::details Gamma Color Space に対応させる場合
+チュートリアルの環境ではデフォルトで Linear Color Space になっていますが、
+Gamma Color Space を使用する場合は、RenderTexture のカラー形式を RenderTextureFormat.ARGB32 にすると描画されます。
+プロジェクトの Color Space に合わせて変更する場合は、下記のようなコードのになります。
+```cs
+var colorFormat = QualitySettings.activeColorSpace == ColorSpace.Linear ? RenderTextureFormat.ARGBFloat : RenderTextureFormat.ARGB32;
+renderTexture = new RenderTexture(512, 512, 16, colorFormat);
+```
+:::
 
 ### ネイティブテクスチャの取得
-OpenVR に渡すテクスチャは DirectX や OpenGL のテクスチャのポインタになります。
-これらは Unity の下のレイヤーで使われているテクスチャ形式です。
-Unity のテクスチャ型は、そのままでは使えないので、GetNativeTexturePtr() を使ってネイティブテクスチャのポインタを取得します。
+OpenVR に渡すテクスチャは Unity の下のレイヤーで使われている DirectX や OpenGL のテクスチャになります。
+Unity のテクスチャ型は、そのままでは使えないので、GetNativeTexturePtr() を使って DirectX や OpenGL のネイティブテクスチャのポインタを取得します。
 
 Update() 内で [GetNativeTexturePtr()](https://docs.unity3d.com/ScriptReference/Texture.GetNativeTexturePtr.html) を呼び出します。
 
@@ -129,29 +141,51 @@ private void Start()
 {        
     InitOpenVR();
     overlayHandle = CreateOverlay("WatchOverlayKey", "WatchOverlay");
-    renderTexture = new RenderTexture(512, 512, 16, QualitySettings.activeColorSpace == ColorSpace.Linear ? RenderTextureFormat.ARGBFloat : RenderTextureFormat.ARGB32);
+
+    renderTexture = new RenderTexture(512, 512, 16, RenderTextureFormat.ARGBFloat);
     camera.targetTexture = renderTexture;
     
     ShowOverlay(overlayHandle);
 }
     
-+ private void Update()
-+ {
-+     var nativeTexturePtr = renderTexture.GetNativeTexturePtr();
-+ }
+private void Update()
+{
+    var leftControllerIndex = OpenVR.System.GetTrackedDeviceIndexForControllerRole(ETrackedControllerRole.LeftHand);
+    if (leftControllerIndex != OpenVR.k_unTrackedDeviceIndexInvalid)
+    {
+        var position = new Vector3(x, y, z);
+        var rotation = Quaternion.Euler(rotationX, rotationY, rotationZ);
+        SetOverlayTransformRelative(overlayHandle, leftControllerIndex, position, rotation);
+    }
+
++   var nativeTexturePtr = renderTexture.GetNativeTexturePtr();
+}
 
 ～省略～
     
 ```
 
-### OpenVR の Texture_t 型を作成
-Texture_t 型の変数を作成してネイティブテクスチャのポインタを設定します。
+:::details レンダリングスレッドの同期について
+[GetNativeTexturePtr()](https://docs.unity3d.com/ScriptReference/Texture.GetNativeTexturePtr.html) のドキュメントでは、GetNativeTexturePtr() は初期化時に一度だけ呼び出すことが推奨されています。
+しかしオーバーレイへの描画処理は、レンダリングスレッドが同期した状態で実行しなければクラッシュすることがあるため、スレッドの同期のために敢えて Update() 内で GetNativeTexturePtr() を呼び出しています。
+GetNativeTexturePtr() を呼び出した後に、続けてオーバーレイへの描画処理を書きます。
+:::
+
+### OpenVR のテクスチャを作成
+OpenVR の Texture_t 型の変数を作成します。
 
 ```diff cs:WatchOverlay.cs
 private void Update()
 {
-    var nativeTexturePtr = renderTexture.GetNativeTexturePtr();
+    var leftControllerIndex = OpenVR.System.GetTrackedDeviceIndexForControllerRole(ETrackedControllerRole.LeftHand);
+    if (leftControllerIndex != OpenVR.k_unTrackedDeviceIndexInvalid)
+    {
+        var position = new Vector3(x, y, z);
+        var rotation = Quaternion.Euler(rotationX, rotationY, rotationZ);
+        SetOverlayTransformRelative(overlayHandle, leftControllerIndex, position, rotation);
+    }
 
+    var nativeTexturePtr = renderTexture.GetNativeTexturePtr();
 +   var texture = new Texture_t
 +   {
 +       eColorSpace = EColorSpace.Auto,
@@ -161,9 +195,12 @@ private void Update()
 }
 ```
 
+オーバーレイに描画するテクスチャは、この Texture_t 型で渡します。
+handle に、先ほど取得したネイティブテクスチャのポインタ nativeTexturePtr をセットします。
+
 :::details DirectX 以外に対応させる場合
-このチュートリアルを作成している環境では、デフォルトで DirectX が Unity のネイティブグラフィック API として使用されています。
-Unity が実際に使用している API の種類は `SystemInfo.graphicsDeviceType` で判定できるので、DirectX 以外の API が使われている場合に対応させる場合は、例えば下記のように値を渡します。
+チュートリアルの環境では、デフォルトで DirectX が使用されています。
+Unity が実行時に使用している API の種類は `SystemInfo.graphicsDeviceType` で判定できるので、DirectX 以外の API が使われている場合に対応させる場合は、下記のように書けます。
 ```cs
 switch (SystemInfo.graphicsDeviceType)
 {
@@ -185,36 +222,28 @@ switch (SystemInfo.graphicsDeviceType)
 ```
 :::
 
-### サイズの調整
-サイズが大きいので 25cm にします。
-```diff cs:WatchOverlay.cs
-rivate void Start()
-
-   InitOpenVR();
-   overlayHandle = CreateOverlay("WatchOverlayKey", "WatchOverlay");
-   renderTexture = new RenderTexture(512, 512, 16, QualitySettings.activeColorSpace == ColorSpace.Linear ? RenderTextureFormat.ARGBFloat : RenderTextureFormat.ARGB32);
-   camera.targetTexture = renderTexture;
-+  SetOverlaySize(overlayHandle, 0.2f);
-   ShowOverlay(overlayHandle);
-
-```
-
 ### オーバーレイにテキスチャを書き込む
-[SetOverlayTexture()](https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.CVROverlay.html#Valve_VR_CVROverlay_SetOverlayTexture_System_UInt64_Valve_VR_Texture_t__) で、ネイティブテクスチャをオーバーレイに書き込むことができます。（詳細は [Wiki](https://github.com/ValveSoftware/openvr/wiki/IVROverlay::SetOverlayTexture)）
-先ほど作成した texture の参照を `SetOverlayTexture()` に渡します
+[SetOverlayTexture()](https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.CVROverlay.html#Valve_VR_CVROverlay_SetOverlayTexture_System_UInt64_Valve_VR_Texture_t__) で、オーバーレイにテクスチャを表示します。（詳細は [Wiki](https://github.com/ValveSoftware/openvr/wiki/IVROverlay::SetOverlayTexture) を参照）
+先ほど作成した Texture_t 型のテクスチャを使います。
 
 ```diff cs:WatchOverlay.cs
 private void Update()
 {
-    var nativeTexturePtr = renderTexture.GetNativeTexturePtr();
+    var leftControllerIndex = OpenVR.System.GetTrackedDeviceIndexForControllerRole(ETrackedControllerRole.LeftHand);
+    if (leftControllerIndex != OpenVR.k_unTrackedDeviceIndexInvalid)
+    {
+        var position = new Vector3(x, y, z);
+        var rotation = Quaternion.Euler(rotationX, rotationY, rotationZ);
+        SetOverlayTransformRelative(overlayHandle, leftControllerIndex, position, rotation);
+    }
 
+    var nativeTexturePtr = renderTexture.GetNativeTexturePtr();
     var texture = new Texture_t
     {
         eColorSpace = EColorSpace.Auto,
         eType = ETextureType.DirectX,
         handle = nativeTexturePtr
     };
-
 +   var error = OpenVR.Overlay.SetOverlayTexture(overlayHandle, ref texture);
 +   if (error != EVROverlayError.None)
 +   {
@@ -223,25 +252,21 @@ private void Update()
 }
 ```
 
-スクリプトを実行します。
-カメラの映像がリアルタイムにオーバーレイに表示されていることを確認してください。
+スクリプトを実行して、カメラの映像がリアルタイムにオーバーレイに表示されていることを確認してください。
 
-:::details レンダリングスレッドの同期について
-[GetNativeTexturePtr()](https://docs.unity3d.com/ScriptReference/Texture.GetNativeTexturePtr.html) のドキュメントでは、GetNativeTexturePtr() は初期化時に一度だけ呼び出すことが推奨されています。
-オーバーレイへの描画は、メインスレッドとレンダリングスレッドが同期した状態でなければクラッシュすることがあるため、スレッドの同期のために Update() 内で GetNativeTexturePtr() を呼び出しています。
-:::
-
-![](/images/incorrect-direction.jpg)
+![](/images/realtime-rendering.gif)
 
 ### 上下を反転させる
-テクスチャの上下が反転しているので、逆向きにします。
-逆向きになっているのは OpenGL と DirectX の UV 座標系の違いによるものです。
+オーバーレイの下側に空が表示されていますね。
+テクスチャの上下が反転しているので、正しい向きに直します。
+逆さまになっているのは DirectX と OpenGL の UV 座標系の違いによるもので、DirectX が使用されていると反転します。
 
 https://docs.unity3d.com/ja/current/Manual/SL-PlatformDifferences.html
 
-Overlay に描画するテクスチャの範囲を UV 座標系で指定できるので、縦方向(V軸)を逆にします。
-`SetOverlayTextureBounds()` と `VRTextureBounds_t` 型でテクスチャの UV を指定できます。
+[SetOverlayTextureBounds()](https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.CVROverlay.html#Valve_VR_CVROverlay_SetOverlayTextureBounds_System_UInt64_Valve_VR_VRTextureBounds_t__) で UV 座標系の V 軸（縦方向）を逆にすることで上下を反転できます。（詳細は [Wiki](https://github.com/ValveSoftware/openvr/wiki/IVROverlay::SetOverlayTextureBounds) を参照）
+これはテクスチャのどの範囲を描画するか指定する関数ですが、向きを変えるためにも使用できます。
 デフォルトでは vMin = 0, vMax = 1 ですが、縦方向を逆にするため vMin = 1, vMax = 0 を渡します。
+
 
 ```diff cs:WatchOverlay.cs
 private void Update()
@@ -262,6 +287,8 @@ private void Update()
         handle = nativeTexturePtr
     };
 
++   // テクスチャの範囲
++   // 上下反転させるために vMin = 1, vMax = 0 にする
 +   var bounds = new VRTextureBounds_t
 +   {
 +       uMin = 0,
@@ -275,8 +302,9 @@ private void Update()
 +       throw new Exception($"テクスチャの反転に失敗しました({error})");
 +   }
 
--    var error = OpenVR.Overlay.SetOverlayTexture(overlayHandle, ref texture);
-+    error = OpenVR.Overlay.SetOverlayTexture(overlayHandle, ref texture);
++   // 上で error 変数を宣言したので var を削除
++   error = OpenVR.Overlay.SetOverlayTexture(overlayHandle, ref texture);
+-   var error = OpenVR.Overlay.SetOverlayTexture(overlayHandle, ref texture);
     if (error != EVROverlayError.None)
     {
         throw new Exception($"テクスチャの描画に失敗しました({error})");
@@ -286,73 +314,60 @@ private void Update()
 
 :::details DirectX 以外に対応させる場合
 今回はデフォルトで DirectX が使われているため、必ず上下を反転させています。
-Unity が使用しているグラフィックス API に合わせて処理する場合は、先程の `graphicsDeviceType` を使用できます。
-```cs
-switch (SystemInfo.graphicsDeviceType)
-{
-    case GraphicsDeviceType.Direct3D11:
-        texture.eType = ETextureType.DirectX;
-        break;
-    case GraphicsDeviceType.Direct3D12:
-        texture.eType = ETextureType.DirectX12;
-        break;
-    case GraphicsDeviceType.OpenGLES2:
-    case GraphicsDeviceType.OpenGLES3:
-    case GraphicsDeviceType.OpenGLCore:
-        texture.eType = ETextureType.OpenGL;
-        break;
-    case GraphicsDeviceType.Vulkan:
-        texture.eType = ETextureType.Vulkan;
-        break;
-}
-
-var bounds = new VRTextureBounds_t();
-switch (nativeTexture.eType)
-{
-    case ETextureType.OpenGL:
-        bounds.uMin = 0;
-        bounds.vMin = 0;
-        bounds.uMax = 1;
-        bounds.vMax = 1;
-        break;
-    case ETextureType.DirectX:
-        bounds.uMin = 0;
-        bounds.vMin = 1;
-        bounds.uMax = 1;
-        bounds.vMax = 0;
-        break;
-}
-```
+Unity が使用しているグラフィックス API に合わせて処理する場合は、先程の `graphicsDeviceType` を使用して、DirectX だったら反転させる処理をいれるといった方法に変えてください。
 :::
 
-これで上下が反転します。
-![](/images/correct-direction.jpg)
+これで上下が反転します。オーバーレイの上側に空が表示されていますね。
+![](/images/flip-y-axis.jpg)
 
 
 ## 時刻を表示する Canvas を作る
-Cube と Directional Light は使わないので削除します。
+リアルタイムにカメラの映像が表示できたので、時計を作成します。
+Cube と Directional Light は使わないのでシーンから削除してください。
 
-シーンに UI > Canvas を作成します。
-Canvas の下に UI > Text - TextMeshPro を作成します。
+![](/images/only-overlay-camera.png)
 
-Scene
-┗ Canvas
-  ┗ Text(TMP)
+シーンに下記を新規追加します。
+- シーンのルートに UI > Canvas を作成
+- Canvas の下に UI > Text - TextMeshPro を作成
+
+![](/images/canvas-text-hierarchy.png)
+
+TextMeshPro を作成するとダイアログが表示されるので、Import TMP Essentials をクリックします。完了したらダイアログを閉じます。
+![](/images/import-tmp-essentials.png)
 
 Canvas の Render mode を Screen Space - Camera にします。
 Render Camera にシーン上のカメラをドラッグしてください。
+![](/images/set-canvas-camera.png)
 
 Text の Alignment でテキストの縦横の位置を中央に揃えます。
-テキストに 18:30:25 のような時刻を入力してください。
-各要素の大きさや位置を調整して、カメラの中央に時刻が表示されるように調整します。
+テキストに "00:00:00" のような時刻を入力してください。
+![](/images/text-alignment.png)
 
-Camera の Background で Alpha を 0 にして、カメラの背景を透明にします。
+Camera の Clear Flags を Solid Color にして、
+Background の色をクリックし、Alpha を 0 にして背景を透明にします。
 これで数字だけが描画されるようになります。
+![](/images/background-color.png)
+
+Canvas の Plane Distance を 10 にします。
+![](/images/plane-distance.png)
+
+Text(TMP) を選択し、アンカー（Rect Transform コンポーネント左上の四角形）で、右下の青い矢印（上下左右ストレッチ）を選択します。
+![](/images/change-anchor.png)
+
+そのまま Left, Top, Right, Bottom の値を 0 にします。
+![](/images/position-0.png)
+
+TextMeshPro コンポーネントの Font Size を 70 にします。
+![](/images/font-size.png)
+
+プログラムを実行して、左手首にちょうどよく時刻が表示されることを確認してください。
+違和感があれば、オーバーレイの大きさや位置、上で設定した各数値を適宜調整してください。
+![](/images/show-time.jpg)
 
 ## 時計を動かす
-スクリプト Watch.cs を新規作成します。
+`Scripts/Watch.cs` を新規作成します。
 下記のコードをコピーしてください。
-TextMeshPro にスクリプトを追加して、時刻が毎秒動くようにします。
 
 ```cs:Watch.cs
 using UnityEngine;
@@ -379,9 +394,16 @@ public class Watch : MonoBehaviour
 
 ```
 
-プログラムを実行して、左手の時計が動くようになったら OK です。
+TextMeshPro にスクリプトを追加します。
+![](/images/watch-to-text.png)
 
-TODO: 実行時の Gif を追加
+
+プログラムを実行して、現在の時刻が表示されていれば OK です。
+
+![](/images/clock-check.jpg)
+*（良い子は早く寝ましょう）*
+
+時計の見た目は、通常の uGUI と同じように Canvas 上で編集できるので、お好みのレイアウトや色などに変更してください。
 
 ## コードの整理
 
