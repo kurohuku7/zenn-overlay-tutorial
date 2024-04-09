@@ -21,6 +21,19 @@ https://assetstore.unity.com/packages/tools/integration/steamvr-plugin-32647
 プロジェクトに Assets/SteamVR フォルダが作られていれば、インストールは完了です。
 ![](https://storage.googleapis.com/zenn-user-upload/5089910653b4-20240227.png)
 
+:::details 必要なファイルだけを OpenVR リポジトリから取得する場合
+上の説明では SteamVR Plugin に OpenVR のファイルが含まれているためインストールしています。
+SteamVR Plugin を使わずに最小限のファイルだけを導入したい場合は、OpenVR のリポジトリから
+
+- **headers/openvr_api.cs**
+- **bin/win64/openvr_api.dll**（他のプラットフォームで動かす場合は、対応する dll ファイル）
+
+をダウンロードして Assets フォルダ内に配置してください。
+※チュートリアルでは SteamVR Plugin 内のユーティリティ関数を使用しているコードがあります。
+
+https://github.com/ValveSoftware/openvr
+:::
+
 ## プロジェクトの設定
 メニューから Edit > Project Setttings を開きます。
 左側の一覧から XR Plug-in Management を選択します。
