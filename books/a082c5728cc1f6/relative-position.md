@@ -11,10 +11,6 @@ free: false
 どのデバイスに追従させるかは、接続されているデバイスを識別するための番号 (Device Index) で指定します。
 HMD の場合は [OpenVR.k_unTrackedDeviceIndex_Hmd](https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.OpenVR.html#Valve_VR_OpenVR_k_unTrackedDeviceIndex_Hmd) の定数で定義されていて 0 で固定です。
 
-:::details OpenVR 内のコードを確認
-https://github.com/ValveSoftware/openvr/blob/v2.5.1/headers/openvr.h#L251-L256
-:::
-
 ### 固定位置表示のコードを削除
 前のページで作成した、空間内の固定位置への表示のコードは削除します。
 ```diff cs:WatchOverlay.cs
@@ -168,11 +164,6 @@ private void Start()
 です。
 
 コントローラが接続されていない場合など、取得に失敗すると `k_unTrackedDeviceIndexInvalid` が返ってきます。
-
-:::details OpenVR のヘッダファイルを確認
-https://github.com/ValveSoftware/openvr/blob/v2.5.1/headers/openvr.h#L2344-L2345
-https://github.com/ValveSoftware/openvr/blob/v2.5.1/headers/openvr.h#L272-L282
-:::
 
 
 ### コントローラに追従させる

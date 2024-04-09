@@ -32,45 +32,33 @@ private void Start()
 実行すると、先程よりも小さくオーバーレイが表示されます。
 ![](/images/small-overlay.jpg)
 
-## オーバーレイの表示位置
+## オーバーレイの固定表示
 オーバーレイを VR 空間内の指定した位置に表示してみます。
-オーバーレイを空間内の特定の位置に固定表示する場合は [SetOverlayTransformAbsolute()](https://github.com/ValveSoftware/openvr/wiki/IVROverlay::SetOverlayTransformAbsolute) を使います。（詳細は [Wiki](https://github.com/ValveSoftware/openvr/wiki/IVROverlay::SetOverlayTransformAbsolute)）
-
-### 固定位置に表示
-プレイエリアの中心を基準として、正面方向に 3 m、上方向に 2 m にして、オーバーレイを Z 軸周りに 45 度回転させてみます。
-
-**※ TODO:図を追加**
-
+オーバーレイを空間内の特定の位置に固定表示する場合は [SetOverlayTransformAbsolute()](https://github.com/ValveSoftware/openvr/wiki/IVROverlay::SetOverlayTransformAbsolute) を使います。（詳細は [Wiki](https://github.com/ValveSoftware/openvr/wiki/IVROverlay::SetOverlayTransformAbsolute) を参照）
 
 ```cs
 EVROverlayError SetOverlayTransformAbsolute(ulong ulOverlayHandle, ETrackingUniverseOrigin eTrackingOrigin, ref HmdMatrix34_t pmatTrackingOriginToOverlayTransform)
 ```
 
+引数の意味は下記のとおりです。
+
 ### ulOverlayHandle
 オーバーレイのハンドルです。
 
 ### etrackingOrigin
-[ETrackingUniverseOrigin](https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.ETrackingUniverseOrigin.html) etrackingOrigin はトラッキングの基準になる原点です。
-`ETrackingUniverseOrigin.TrackingStanding` だと SteamVR のプレイエリアの床の中心が原点となります。
-`ETrackingUniverseOrigin.TrackingUniverseSeated` だとユーザが座った状態でリセットした HMD の位置が原点になります。
+位置指定の基準になる原点です。（[ETrackingUniverseOrigin](https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.ETrackingUniverseOrigin.html) 型）
+
+`ETrackingUniverseOrigin.TrackingStanding`
+SteamVR のプレイエリアの床の中心が原点となります。
+
+`ETrackingUniverseOrigin.TrackingUniverseSeated`
+ユーザが座った状態でリセットした HMD の位置が原点になります。
 
 ### pmatTrackingOriginOverlayTransform
-`HmdMatrix34_t pmatTrackingOriginToOverlayTransform` が原点からの変形を表す変換行列です。
+原点からの変形を表す変換行列です。（`HmdMatrix34_t` 型）
+SteamVR Plugin に `position (Vector3)` と `rotation (Quarternion)` から `HmdMatrix34_t` の変換行列を作るユーティリティ `SteamVR_Utils.RigidTransform.ToHmDMatrix34()` が入っているので、今回はこちらを使います。
 
-SteamVR Plugin に position (Vector3) と rotation (Quarternion) から HmdMatrix34_t の変換行列を作るユーティリティが入っているので、今回はこちらを使います。
-
-:::details 変換行列
-https://qiita.com/suzuryo3893/items/9e543cdf8bc64dc7002a
-
-:::
-
-
-:::details 左手系と右手系
-座標系は Unity が左手系、OpenVR が右手系です。
-OpenVR では +y が上、+x が右、-z が奥となります。
-SteamVR のユーティリティが内部で座標系の変換を行うため、ここでは意識する必要がないですが、自前で変換行列を作成する場合は Z 軸の向きや回転の方向が逆になる点に注意が必要です。
-:::
-
+プレイエリアの中心を基準として、正面方向に 3 m、上方向に 2 m の位置に、Z 軸周りに 45 度回転させてみます。
 
 ```diff cs:WatchOverlay.cs
 private void Start()
@@ -110,6 +98,12 @@ private void Start()
 
 ![](/images/far-overlay-position.jpg)
 *床から高さ 2m、正面方向に 3m、Z 軸周りに 45 度回転*
+
+:::details 左手系と右手系
+座標系は Unity が左手系、OpenVR が右手系です。
+OpenVR では +y が上、+x が右、-z が奥となります。
+`SteamVR_Utils.RigidTransform` が内部で座標系の変換を行うため、ここでは意識する必要がないですが、自前で変換行列を作成する場合は Z 軸の向きや回転方向が逆になる点に注意が必要です。
+:::
 
 ## コード整理
 
@@ -251,7 +245,7 @@ public class WatchOverlay : MonoBehaviour
         SetOverlayTransformAbsolute(overlayHandle, position, rotation);
 
         ShowOverlay(overlayHandle);
-     }
+    }
     
     private void OnDestroy()
     {
