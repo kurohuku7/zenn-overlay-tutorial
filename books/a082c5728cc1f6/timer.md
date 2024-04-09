@@ -220,6 +220,10 @@ switch (SystemInfo.graphicsDeviceType)
         break;
 }
 ```
+
+Project Settings > Player > Other Settings > Auto Graphics API for Windows のチェックを外して、Graphics APIs for Windows のリストの一番上に Direct3D11 以外の API を追加すると、その API を使った動作確認が可能です。
+![](/images/graphics-api.png)
+https://docs.unity3d.com/ja/2019.4/Manual/GraphicsAPIs.html
 :::
 
 ### オーバーレイにテキスチャを書き込む
@@ -252,12 +256,12 @@ private void Update()
 }
 ```
 
-スクリプトを実行して、カメラの映像がリアルタイムにオーバーレイに表示されていることを確認してください。
+プログラムを実行して、カメラの映像がリアルタイムにオーバーレイに表示されることを確認してください。
 
 ![](/images/realtime-rendering.gif)
 
 ### 上下を反転させる
-オーバーレイの下側に空が表示されていますね。
+オーバーレイの下側に Unity の空が表示されていますね。
 テクスチャの上下が反転しているので、正しい向きに直します。
 逆さまになっているのは DirectX と OpenGL の UV 座標系の違いによるもので、DirectX が使用されていると反転します。
 
@@ -269,26 +273,14 @@ https://docs.unity3d.com/ja/current/Manual/SL-PlatformDifferences.html
 
 
 ```diff cs:WatchOverlay.cs
-private void Update()
+private void Start()
 {
-    var leftControllerIndex = OpenVR.System.GetTrackedDeviceIndexForControllerRole(ETrackedControllerRole.LeftHand);
-    if (leftControllerIndex != OpenVR.k_unTrackedDeviceIndexInvalid)
-    {
-        var position = new Vector3(x, y, z);
-        var rotation = Quaternion.Euler(rotationX, rotationY, rotationZ);
-        SetOverlayTransformRelative(overlayHandle, leftControllerIndex, position, rotation);
-    }
-    
-    var nativeTexturePtr = renderTexture.GetNativeTexturePtr();
-    var texture = new Texture_t
-    {
-        eColorSpace = EColorSpace.Auto,
-        eType = ETextureType.DirectX,
-        handle = nativeTexturePtr
-    };
+    InitOpenVR();
+    overlayHandle = CreateOverlay("WatchOverlayKey", "WatchOverlay");
 
-+   // テクスチャの範囲
-+   // 上下反転させるために vMin = 1, vMax = 0 にする
+    renderTexture = new RenderTexture(512, 512, 16, RenderTextureFormat.ARGBFloat);
+    camera.targetTexture = renderTexture;
+    
 +   var bounds = new VRTextureBounds_t
 +   {
 +       uMin = 0,
@@ -299,36 +291,31 @@ private void Update()
 +   var error = OpenVR.Overlay.SetOverlayTextureBounds(overlayHandle, ref bounds);
 +   if (error != EVROverlayError.None)
 +   {
-+       throw new Exception($"テクスチャの反転に失敗しました({error})");
++       throw new Exception("テクスチャの反転に失敗しました: " + error);
 +   }
-
-+   // 上で error 変数を宣言したので var を削除
-+   error = OpenVR.Overlay.SetOverlayTexture(overlayHandle, ref texture);
--   var error = OpenVR.Overlay.SetOverlayTexture(overlayHandle, ref texture);
-    if (error != EVROverlayError.None)
-    {
-        throw new Exception($"テクスチャの描画に失敗しました({error})");
-    }
+    
+    SetOverlaySize(overlayHandle, size);
+    ShowOverlay(overlayHandle);
 }
 ```
 
-:::details DirectX 以外に対応させる場合
-今回はデフォルトで DirectX が使われているため、必ず上下を反転させています。
-Unity が使用しているグラフィックス API に合わせて処理する場合は、先程の `graphicsDeviceType` を使用して、DirectX だったら反転させる処理をいれるといった方法に変えてください。
-:::
-
-これで上下が反転します。オーバーレイの上側に空が表示されていますね。
+これで上下が反転します。オーバーレイの上側に Unity の空が表示されていますね。
 ![](/images/flip-y-axis.jpg)
+
+:::details DirectX 以外に対応させる場合
+このチュートリアルの動作環境では、デフォルトで DirectX が使われるため、上下を反転させています。
+他の API が使われる環境に対応させる場合は、`graphicsDeviceType` を参照して、DirectX だったら反転させる処理をいれるといった方法に変えてください。
+:::
 
 
 ## 時刻を表示する Canvas を作る
-リアルタイムにカメラの映像が表示できたので、時計を作成します。
+カメラの映像が表示できたので、次は時計を作成します。
 Cube と Directional Light は使わないのでシーンから削除してください。
 
 ![](/images/only-overlay-camera.png)
 
-シーンに下記を新規追加します。
-- シーンのルートに UI > Canvas を作成
+シーンに下記のオブジェクトを追加します。
+- UI > Canvas を作成
 - Canvas の下に UI > Text - TextMeshPro を作成
 
 ![](/images/canvas-text-hierarchy.png)
@@ -337,32 +324,33 @@ TextMeshPro を作成するとダイアログが表示されるので、Import T
 ![](/images/import-tmp-essentials.png)
 
 Canvas の Render mode を Screen Space - Camera にします。
-Render Camera にシーン上のカメラをドラッグしてください。
+Canvas の Render Camera にシーン上のカメラをドラッグしてください。
 ![](/images/set-canvas-camera.png)
 
-Text の Alignment でテキストの縦横の位置を中央に揃えます。
-テキストに "00:00:00" のような時刻を入力してください。
+Text (TMP) の Alignment でテキストの縦横の位置を中央に揃えます。
+テキストに "00:00:00" を入力してください。
 ![](/images/text-alignment.png)
 
-Camera の Clear Flags を Solid Color にして、
-Background の色をクリックし、Alpha を 0 にして背景を透明にします。
-これで数字だけが描画されるようになります。
+Camera の Clear Flags を Solid Color にします。
+Camera の Background の色をクリックし、Alpha を 0 にして背景を透明にします。
+これでカメラ映像の背景が透過されて、時刻だけが描画されるようになります。
 ![](/images/background-color.png)
 
-Canvas の Plane Distance を 10 にします。
+Canvas の Plane Distance を 10 にします。大きさ調整のためです。
 ![](/images/plane-distance.png)
 
-Text(TMP) を選択し、アンカー（Rect Transform コンポーネント左上の四角形）で、右下の青い矢印（上下左右ストレッチ）を選択します。
+Text (TMP) を選択し、アンカーの設定（Rect Transform コンポーネント左上の四角形）をクリックして、右下の青い十字の矢印（上下左右ストレッチ）を選択します。
 ![](/images/change-anchor.png)
 
 そのまま Left, Top, Right, Bottom の値を 0 にします。
+これで Canvas 全体にテキストの領域が広がります。
 ![](/images/position-0.png)
 
-TextMeshPro コンポーネントの Font Size を 70 にします。
+Text (TMP) の Font Size を 70 にします。
 ![](/images/font-size.png)
 
 プログラムを実行して、左手首にちょうどよく時刻が表示されることを確認してください。
-違和感があれば、オーバーレイの大きさや位置、上で設定した各数値を適宜調整してください。
+必要に応じてオーバーレイの大きさや位置、フォントサイズなどを調整してください。
 ![](/images/show-time.jpg)
 
 ## 時計を動かす
@@ -394,19 +382,288 @@ public class Watch : MonoBehaviour
 
 ```
 
-TextMeshPro にスクリプトを追加します。
+Text (TMP) に Watch.cs を追加します。
 ![](/images/watch-to-text.png)
 
 
 プログラムを実行して、現在の時刻が表示されていれば OK です。
 
 ![](/images/clock-check.jpg)
-*（良い子は早く寝ましょう）*
 
-時計の見た目は、通常の uGUI と同じように Canvas 上で編集できるので、お好みのレイアウトや色などに変更してください。
+これで VR ゲームに持ち込める腕時計ができました。
+時計の見た目は、通常の uGUI と同じように Canvas 上で編集できるので、デザインを変更してみてください。
 
 ## コードの整理
 
-コードを整理します
+### オーバーレイの上下反転
+`flipOverlayVertical()` として関数に分けておきます。
+```diff cs:WatchOverlay.cs
+private void Start()
+{
+    InitOpenVR();
+    overlayHandle = CreateOverlay("WatchOverlayKey", "WatchOverlay");
+    renderTexture = new RenderTexture(512, 512, 16, RenderTextureFormat.ARGBFloat);
+    camera.targetTexture = renderTexture;
+    
+-   var bounds = new VRTextureBounds_t
+-   {
+-       uMin = 0,
+-       uMax = 1,
+-       vMin = 1,
+-       vMax = 0
+-   };
+-   var error = OpenVR.Overlay.SetOverlayTextureBounds(overlayHandle, ref bounds);
+-   if (error != EVROverlayError.None)
+-   {
+-       throw new Exception("テクスチャの反転に失敗しました: " + error);
+-   }
++   flipOverlayVertical(overlayHandle);    
+    SetOverlaySize(overlayHandle, size);
+    ShowOverlay(overlayHandle);
+}
 
+～省略～
 
++ private void flipOverlayVertical(ulong handle)
++ {
++    var bounds = new VRTextureBounds_t
++    {
++        uMin = 0,
++        uMax = 1,
++        vMin = 1,
++        vMax = 0
++    };
++
++    // overlayHandle -> handle に変数名を変更
++    var error = OpenVR.Overlay.SetOverlayTextureBounds(handle, ref bounds);
++    if (error != EVROverlayError.None)
++    {
++        throw new Exception("テクスチャの反転に失敗しました: " + error);
++    }
++ }
+
+```
+
+### RenderTexture の描画
+`SetOverlayRenderTexture()` として関数に分けておきます。
+```diff cs:WatchOverlay.cs
+private void Update()
+{
+    var leftControllerIndex = OpenVR.System.GetTrackedDeviceIndexForControllerRole(ETrackedControllerRole.LeftHand);
+    if (leftControllerIndex != OpenVR.k_unTrackedDeviceIndexInvalid)
+    {
+        var position = new Vector3(x, y, z);
+        var rotation = Quaternion.Euler(rotationX, rotationY, rotationZ);
+        SetOverlayTransformRelative(overlayHandle, leftControllerIndex, position, rotation);
+    }
+
+-   var nativeTexturePtr = renderTexture.GetNativeTexturePtr();
+-   var texture = new Texture_t
+-   {
+-       eColorSpace = EColorSpace.Auto,
+-       eType = ETextureType.DirectX,
+-       handle = nativeTexturePtr
+-   };
+-   var error = OpenVR.Overlay.SetOverlayTexture(overlayHandle, ref texture);
+-   if (error != EVROverlayError.None)
+-   {
+-       throw new Exception("テクスチャの描画に失敗しました: " + error);
+-   }
++   SetOverlayRenderTexture(renderTexture);
+}
+
+～省略～
+
++ private void SetOverlayRenderTexture(RenderTexture renderTexture)
++ {
++     var nativeTexturePtr = renderTexture.GetNativeTexturePtr();
++     var texture = new Texture_t
++     {
++         eColorSpace = EColorSpace.Auto,
++         eType = ETextureType.DirectX,
++         handle = nativeTexturePtr
++     };
++     var error = OpenVR.Overlay.SetOverlayTexture(overlayHandle, ref texture);
++     if (error != EVROverlayError.None)
++     {
++         throw new Exception("テクスチャの描画に失敗しました: " + error);
++     }
++ }
+
+```
+
+### 最終的なコード
+```cs: WatchOverlay.cs
+using System;
+using UnityEngine;
+using Valve.VR;
+
+public class WatchOverlay : MonoBehaviour
+{
+    public Camera camera;
+    private RenderTexture renderTexture;
+
+    private ulong overlayHandle = OpenVR.k_ulOverlayHandleInvalid;
+
+    [Range(0, 0.5f)] public float size;
+    [Range(-0.5f, 0.5f)] public float x;
+    [Range(-0.5f, 0.5f)] public float y;
+    [Range(-0.5f, 0.5f)] public float z;
+    [Range(0, 360)] public int rotationX;
+    [Range(0, 360)] public int rotationY;
+    [Range(0, 360)] public int rotationZ;
+
+    private void Start()
+    {
+        InitOpenVR();
+        overlayHandle = CreateOverlay("WatchOverlayKey", "WatchOverlay");
+
+        renderTexture = new RenderTexture(512, 512, 16, RenderTextureFormat.ARGBFloat);
+        camera.targetTexture = renderTexture;
+
+        flipOverlayVertical(overlayHandle);
+        SetOverlaySize(overlayHandle, size);
+        ShowOverlay(overlayHandle);
+    }
+
+    private void Update()
+    {
+        var leftControllerIndex = OpenVR.System.GetTrackedDeviceIndexForControllerRole(ETrackedControllerRole.LeftHand);
+        if (leftControllerIndex != OpenVR.k_unTrackedDeviceIndexInvalid)
+        {
+            var position = new Vector3(x, y, z);
+            var rotation = Quaternion.Euler(rotationX, rotationY, rotationZ);
+            SetOverlayTransformRelative(overlayHandle, leftControllerIndex, position, rotation);
+        }
+
+        SetOverlayRenderTexture(renderTexture);
+    }
+
+    private void OnDestroy()
+    {
+        DestroyOverlay(overlayHandle);
+        ShutdownOpenVR();
+    }
+
+    private void InitOpenVR()
+    {
+        if (OpenVR.System != null) return;
+
+        var initError = EVRInitError.None;
+        OpenVR.Init(ref initError, EVRApplicationType.VRApplication_Overlay);
+        if (initError != EVRInitError.None)
+        {
+            throw new Exception("OpenVRの初期化に失敗しました: " + initError);
+        }
+    }
+
+    private void ShutdownOpenVR()
+    {
+        if (OpenVR.System != null)
+        {
+            OpenVR.Shutdown();
+        }
+    }
+
+    private ulong CreateOverlay(string key, string name)
+    {
+        var handle = OpenVR.k_ulOverlayHandleInvalid;
+        var error = OpenVR.Overlay.CreateOverlay(key, name, ref handle);
+        if (error != EVROverlayError.None)
+        {
+            throw new Exception("オーバーレイの作成に失敗しました: " + error);
+        }
+
+        return handle;
+    }
+
+    private void DestroyOverlay(ulong handle)
+    {
+        if (handle != OpenVR.k_ulOverlayHandleInvalid)
+        {
+            OpenVR.Overlay.DestroyOverlay(handle);
+        }
+    }
+
+    private void ShowOverlay(ulong handle)
+    {
+        var error = OpenVR.Overlay.ShowOverlay(handle);
+        if (error != EVROverlayError.None)
+        {
+            throw new Exception("オーバーレイの表示に失敗しました: " + error);
+        }
+    }
+
+    private void SetOverlayFromFile(ulong handle, string path)
+    {
+        var error = OpenVR.Overlay.SetOverlayFromFile(handle, path);
+        if (error != EVROverlayError.None)
+        {
+            throw new Exception("画像ファイルの描画に失敗しました: " + error);
+        }
+    }
+
+    private void SetOverlaySize(ulong handle, float size)
+    {
+        var error = OpenVR.Overlay.SetOverlayWidthInMeters(handle, size);
+        if (error != EVROverlayError.None)
+        {
+            throw new Exception("オーバーレイのサイズ設定に失敗しました: " + error);
+        }
+    }
+
+    private void SetOverlayTransformAbsolute(ulong handle, Vector3 position, Quaternion rotation)
+    {
+        var rigidTransform = new SteamVR_Utils.RigidTransform(position, rotation);
+        var matrix = rigidTransform.ToHmdMatrix34();
+        var error = OpenVR.Overlay.SetOverlayTransformAbsolute(handle, ETrackingUniverseOrigin.TrackingUniverseStanding, ref matrix);
+        if (error != EVROverlayError.None)
+        {
+            throw new Exception("オーバーレイの位置設定に失敗しました: " + error);
+        }
+    }
+
+    private void SetOverlayTransformRelative(ulong handle, uint deviceIndex, Vector3 position, Quaternion rotation)
+    {
+        var rigidTransform = new SteamVR_Utils.RigidTransform(position, rotation);
+        var matrix = rigidTransform.ToHmdMatrix34();
+        var error = OpenVR.Overlay.SetOverlayTransformTrackedDeviceRelative(handle, deviceIndex, ref matrix);
+        if (error != EVROverlayError.None)
+        {
+            throw new Exception("オーバーレイの位置設定に失敗しました: " + error);
+        }
+    }
+
+    private void flipOverlayVertical(ulong handle)
+    {
+        var bounds = new VRTextureBounds_t
+        {
+            uMin = 0,
+            uMax = 1,
+            vMin = 1,
+            vMax = 0
+        };
+        var error = OpenVR.Overlay.SetOverlayTextureBounds(handle, ref bounds);
+        if (error != EVROverlayError.None)
+        {
+            throw new Exception("テクスチャの反転に失敗しました: " + error);
+        }
+    }
+    
+    private void SetOverlayRenderTexture(RenderTexture renderTexture)
+    {
+        var nativeTexturePtr = renderTexture.GetNativeTexturePtr();
+        var texture = new Texture_t
+        {
+            eColorSpace = EColorSpace.Auto,
+            eType = ETextureType.DirectX,
+            handle = nativeTexturePtr
+        };
+        var error = OpenVR.Overlay.SetOverlayTexture(overlayHandle, ref texture);
+        if (error != EVROverlayError.None)
+        {
+            throw new Exception("テクスチャの描画に失敗しました: " + error);
+        }
+    }
+}
+```
