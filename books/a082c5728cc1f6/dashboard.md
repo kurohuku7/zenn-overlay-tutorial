@@ -40,20 +40,26 @@ public class DashboardOverlay : MonoBehaviour
 作成するとダッシュボードとサムネイルの 2 つが作成され、それぞれのオーバーレイハンドルが取得されます。
 dashboardHandle が設定画面、thumbnailHandle がダッシュボードの下に表示されるアイコン用のオーバーレイです。
 
+## シーンに設置
+Hierarchy ビューで右クリック > Create Empty で空のゲームオブジェクトを作成します。
+オブジェクトの名前を `DashboardOverlay` にして、`Scripts/DashboardOverlay.cs` をドラッグして追加します。
+
+![](/images/create-dashboard-object.png)
+
 ## OpenVR の初期化、クリーンアップ
 OpenVR.Overlay API を使用するためには、OpenVR が初期化されている必要があります。
 今回は、WatchOverlay.cs で作成した OpenVR の初期化処理を、共有のユーティリティとして抜き出して、他のクラスからも呼び出せるようにします。
 
 ### ユーティリティクラスの作成
-`Scripts/Overlay.cs` を作成します。
-```cs:Overlay.cs
+`Scripts/OpenVRUtil.cs` を作成します。
+```cs:OpenVRUtil.cs
 using UnityEngine;
 using Valve.VR;
 using System;
 
-namespace OverlayUtil
+namespace OpenVRUtil
 {
-    public class Overlay : MonoBehaviour
+    public static class System
     {
     }
 }
@@ -62,7 +68,7 @@ namespace OverlayUtil
 ここでの namespace は名前衝突の回避と、わかりやすさのためにつけているだけです。
 
 ### OpenVR の初期化処理を移動
-`WatchOverlay.cs` から `InitOpenVR()` を `Overlay.cs` に移動します。
+`WatchOverlay.cs` から `InitOpenVR()` を `OpenVRUtil.cs` に移動します。
 この時、他のクラスから使いやすくするため static メソッドとして追加しておきます。
 
 ```diff cs:WatchOverlay.cs
@@ -97,14 +103,14 @@ private void ShutdownOpenVR()
 ～省略～
 ```
 
-```diff cs:Overlay.cs
+```diff cs:OpenVRUtil.cs
 using UnityEngine;
 using Valve.VR;
 using System;
 
-namespace OverlayUtil
+namespace OpenVRUtil
 {
-    public class Overlay : MonoBehaviour
+    public static class System
     {
 +       public static void InitOpenVR()
 +       {
@@ -121,110 +127,9 @@ namespace OverlayUtil
 }
 ```
 
-### 初期化の呼び出しを変更（WatchOverlay.cs）
-OvelrayUtil に移動した初期化処理を呼び出すように変更します。
+### OpenVR のクリーンアップ処理を移動
+同様に `ShutdownOpenVR()` も static メソッドとして移動します。
 
-```diff cs:WatchOverlay.cs
-using System;
-using UnityEngine;
-using Valve.VR;
-+ using OverlayUtil;
-
-public class WatchOverlay : MonoBehaviour
-{
-    public Camera camera;
-    private RenderTexture renderTexture;
-
-    private ulong overlayHandle = OpenVR.k_ulOverlayHandleInvalid;
-
-    [Range(0, 0.5f)] public float size;
-    [Range(-0.5f, 0.5f)] public float x;
-    [Range(-0.5f, 0.5f)] public float y;
-    [Range(-0.5f, 0.5f)] public float z;
-    [Range(0, 360)] public int rotationX;
-    [Range(0, 360)] public int rotationY;
-    [Range(0, 360)] public int rotationZ;
-
-    private void Start()
-    {
-+       Overlay.InitOpenVR();
--       InitOpenVR();
-        overlayHandle = CreateOverlay("WatchOverlayKey", "WatchOverlay");
-
-        renderTexture = new RenderTexture(512, 512, 16, RenderTextureFormat.ARGBFloat);
-        camera.targetTexture = renderTexture;
-
-        flipOverlayVertical(overlayHandle);
-        SetOverlaySize(overlayHandle, size);
-        ShowOverlay(overlayHandle);
-    }
-    
-    ～省略～
-```
-
-### 初期化処理を呼び出し（DashboardOverlay.cs）
-`OpenVR.Overlay.CreateDashboardOverlay()` No前に OpenVR の初期化処理を呼び出します。
-`InitOpenVR()` ではすでに初期化されている場合は、何もしないように作ったので、複数の場所から呼び出しても問題ありません。
-
-```diff cs:DashboardOverlay.cs
-using UnityEngine;
-using Valve.VR;
-using System;
-+ using OverlayUtil;
-
-public class DashboardOverlay : MonoBehaviour
-{
-    private ulong dashboardHandle = OpenVR.k_ulOverlayHandleInvalid;
-    private ulong thumbnailHandle = OpenVR.k_ulOverlayHandleInvalid;
-
-    private void Start()
-    {
-+       Overlay.InitOpenVR();
-        
-        var error = OpenVR.Overlay.CreateDashboardOverlay("WatchDashboardKey", "Watch Setting", ref dashboardHandle, ref thumbnailHandle);
-        if (error != EVROverlayError.None)
-        {
-            throw new Exception("ダッシュボード‐バーレイの作成に失敗しました: " + error);
-        }
-    }
-}
-```
-
-### クリーンアップ処理をユーティリティに移動
-初期化と同様にクリーンアップ処理も移動させて、ユーティリティとして呼び出すように変更します。
-
-```diff cs:Overlay.cs
-using UnityEngine;
-using Valve.VR;
-using System;
-
-namespace OverlayUtil
-{
-    public class Overlay : MonoBehaviour
-    {
-        public static void InitOpenVR()
-        {
-            if (OpenVR.System != null) return;
-
-            var initError = EVRInitError.None;
-            OpenVR.Init(ref initError, EVRApplicationType.VRApplication_Overlay);
-            if (initError != EVRInitError.None)
-            {
-                throw new Exception("OpenVRの初期化に失敗しました: " + initError);
-            }
-        }
-        
-+       public static void ShutdownOpenVR()
-+       {
-+           if (OpenVR.System != null)
-+           {
-+               OpenVR.Shutdown();
-+           }
-+       }
-    }
-}
-
-```
 
 ```diff cs:WatchOverlay.cs
 ～省略～
@@ -232,8 +137,7 @@ namespace OverlayUtil
 private void OnDestroy()
 {
     DestroyOverlay(overlayHandle);
-+   Overlay.ShutdownOpenVR();
--   ShutdownOpenVR();
+    ShutdownOpenVR();
 }
 
 - private void ShutdownOpenVR()
@@ -259,21 +163,592 @@ private ulong CreateOverlay(string key, string name)
 ～省略～
 ```
 
-```diff cs:DashboardOverlay.cs
+```diff cs:OpenVRUtil.cs
+using UnityEngine;
+using Valve.VR;
+using System;
+
+namespace OpenVRUtil
+{
+    public static class System
+    {
+        public static void InitOpenVR()
+        {
+            if (OpenVR.System != null) return;
+
+            var initError = EVRInitError.None;
+            OpenVR.Init(ref initError, EVRApplicationType.VRApplication_Overlay);
+            if (initError != EVRInitError.None)
+            {
+                throw new Exception("OpenVRの初期化に失敗しました: " + initError);
+            }
+        }
+        
++       public static void ShutdownOpenVR()
++       {
++           if (OpenVR.System != null)
++           {
++               OpenVR.Shutdown();
++           }
++       }
+    }
+}
 
 ```
 
-## アイコンの表示
+### オーバーレイ関連処理の移動
+オーバーレイ関連の処理も `WatchOverlay.cs` から `OpenVRUtil.cs` へ移動します。
+`CreateOverlay()` から `SetOverlayRenderTexture()` までの処理を移動します。
 
+```diff cs:WatchOverlay.cs
+private void OnDestroy()
+{
+    DestroyOverlay(overlayHandle);
+    OpenVRUtil.System.ShutdownOpenVR();
+}
 
-### Canvas と Camera を設置
-Canvas とカメラを作成
+- private ulong CreateOverlay(string key, string name)
+- {
+-     var handle = OpenVR.k_ulOverlayHandleInvalid;
+-     var error = OpenVR.Overlay.CreateOverlay(key, name, ref handle);
+-     if (error != EVROverlayError.None)
+-     {
+-         throw new Exception("オーバーレイの作成に失敗しました: " + error);
+-     }
+- 
+-     return handle;
+- }
+- 
+- private void DestroyOverlay(ulong handle)
+- {
+-     if (handle != OpenVR.k_ulOverlayHandleInvalid)
+-     {
+-         OpenVR.Overlay.DestroyOverlay(handle);
+-     }
+- }
+- 
+- private void ShowOverlay(ulong handle)
+- {
+-     var error = OpenVR.Overlay.ShowOverlay(handle);
+-     if (error != EVROverlayError.None)
+-     {
+-         throw new Exception("オーバーレイの表示に失敗しました: " + error);
+-     }
+- }
+- 
+- private void SetOverlayFromFile(ulong handle, string path)
+- {
+-     var error = OpenVR.Overlay.SetOverlayFromFile(handle, path);
+-     if (error != EVROverlayError.None)
+-     {
+-         throw new Exception("画像ファイルの描画に失敗しました: " + error);
+-     }
+- }
+- 
+- private void SetOverlaySize(ulong handle, float size)
+- {
+-     var error = OpenVR.Overlay.SetOverlayWidthInMeters(handle, size);
+-     if (error != EVROverlayError.None)
+-     {
+-         throw new Exception("オーバーレイのサイズ設定に失敗しました: " + error);
+-     }
+- }
+- 
+- private void SetOverlayTransformAbsolute(ulong handle, Vector3 position, Quaternion rotation)
+- {
+-     var rigidTransform = new SteamVR_Utils.RigidTransform(position, rotation);
+-     var matrix = rigidTransform.ToHmdMatrix34();
+-     var error = OpenVR.Overlay.SetOverlayTransformAbsolute(handle, ETrackingUniverseOrigin.TrackingUniverseStanding, ref matrix);
+-     if (error != EVROverlayError.None)
+-     {
+-         throw new Exception("オーバーレイの位置設定に失敗しました: " + error);
+-     }
+- }
+- 
+- private void SetOverlayTransformRelative(ulong handle, uint deviceIndex, Vector3 position, Quaternion rotation)
+- {
+-     var rigidTransform = new SteamVR_Utils.RigidTransform(position, rotation);
+-     var matrix = rigidTransform.ToHmdMatrix34();
+-     var error = OpenVR.Overlay.SetOverlayTransformTrackedDeviceRelative(handle, deviceIndex, ref matrix);
+-     if (error != EVROverlayError.None)
+-     {
+-         throw new Exception("オーバーレイの位置設定に失敗しました: " + error);
+-     }
+- }
+- 
+- private void flipOverlayVertical(ulong handle)
+- {
+-     var bounds = new VRTextureBounds_t
+-     {
+-         uMin = 0,
+-         uMax = 1,
+-         vMin = 1,
+-         vMax = 0
+-     };
+-     var error = OpenVR.Overlay.SetOverlayTextureBounds(handle, ref bounds);
+-     if (error != EVROverlayError.None)
+-     {
+-         throw new Exception("テクスチャの反転に失敗しました: " + error);
+-     }
+- }
+- 
+- private void SetOverlayRenderTexture(RenderTexture renderTexture)
+- {
+-     var nativeTexturePtr = renderTexture.GetNativeTexturePtr();
+-     var texture = new Texture_t
+-     {
+-         eColorSpace = EColorSpace.Auto,
+-         eType = ETextureType.DirectX,
+-         handle = nativeTexturePtr
+-     };
+-     var error = OpenVR.Overlay.SetOverlayTexture(overlayHandle, ref texture);
+-     if (error != EVROverlayError.None)
+-     {
+-         throw new Exception("テクスチャの描画に失敗しました: " + error);
+-     }
+- }
+```
 
-### UI の作成
-uGUI を使ってボタンを作成します。
-片方のボタンを「左手に表示」
-もう片方のボタンを「右手に表示」
-します。
+`static class Overlay` を作成して、全てのメソッドを `public static` メソッドとして追加します。
+
+```diff cs:OpenVRUtil.cs
+namespace OpenVRUtil
+{
+    public static class System
+    {
+        public static void InitOpenVR()
+        {
+            if (OpenVR.System != null) return;
+
+            var initError = EVRInitError.None;
+            OpenVR.Init(ref initError, EVRApplicationType.VRApplication_Overlay);
+            if (initError != EVRInitError.None)
+            {
+                throw new Exception("OpenVRの初期化に失敗しました: " + initError);
+            }
+        }
+        
+        public static void ShutdownOpenVR()
+        {
+            if (OpenVR.System != null)
+            {
+                OpenVR.Shutdown();
+            }
+        }
+    }
+    
++   public static class Overlay
++   {
++       public static ulong CreateOverlay(string key, string name)
++       {
++           var handle = OpenVR.k_ulOverlayHandleInvalid;
++           var error = OpenVR.Overlay.CreateOverlay(key, name, ref handle);
++           if (error != EVROverlayError.None)
++           {
++               throw new Exception("オーバーレイの作成に失敗しました: " + error);
++           }
++
++           return handle;
++       }
++
++       public static void DestroyOverlay(ulong handle)
++       {
++           if (handle != OpenVR.k_ulOverlayHandleInvalid)
++           {
++               OpenVR.Overlay.DestroyOverlay(handle);
++           }
++       }
++
++       public static void ShowOverlay(ulong handle)
++       {
++           var error = OpenVR.Overlay.ShowOverlay(handle);
++           if (error != EVROverlayError.None)
++           {
++               throw new Exception("オーバーレイの表示に失敗しました: " + error);
++           }
++       }
++
++       public static void SetOverlayFromFile(ulong handle, string path)
++       {
++           var error = OpenVR.Overlay.SetOverlayFromFile(handle, path);
++           if (error != EVROverlayError.None)
++           {
++               throw new Exception("画像ファイルの描画に失敗しました: " + error);
++           }
++       }
++
++       public static void SetOverlaySize(ulong handle, float size)
++       {
++           var error = OpenVR.Overlay.SetOverlayWidthInMeters(handle, size);
++           if (error != EVROverlayError.None)
++           {
++               throw new Exception("オーバーレイのサイズ設定に失敗しました: " + error);
++           }
++       }
++
++       public static void SetOverlayTransformAbsolute(ulong handle, Vector3 position, Quaternion rotation)
++       {
++           var rigidTransform = new SteamVR_Utils.RigidTransform(position, rotation);
++           var matrix = rigidTransform.ToHmdMatrix34();
++           var error = OpenVR.Overlay.SetOverlayTransformAbsolute(handle, ETrackingUniverseOrigin.TrackingUniverseStanding, ref matrix);
++           if (error != EVROverlayError.None)
++           {
++               throw new Exception("オーバーレイの位置設定に失敗しました: " + error);
++           }
++       }
++
++       public static void SetOverlayTransformRelative(ulong handle, uint deviceIndex, Vector3 position, Quaternion rotation)
++       {
++           var rigidTransform = new SteamVR_Utils.RigidTransform(position, rotation);
++           var matrix = rigidTransform.ToHmdMatrix34();
++           var error = OpenVR.Overlay.SetOverlayTransformTrackedDeviceRelative(handle, deviceIndex, ref matrix);
++           if (error != EVROverlayError.None)
++           {
++               throw new Exception("オーバーレイの位置設定に失敗しました: " + error);
++           }
++       }
++
++       public static void flipOverlayVertical(ulong handle)
++       {
++           var bounds = new VRTextureBounds_t
++           {
++               uMin = 0,
++               uMax = 1,
++               vMin = 1,
++               vMax = 0
++           };
++           var error = OpenVR.Overlay.SetOverlayTextureBounds(handle, ref bounds);
++           if (error != EVROverlayError.None)
++           {
++               throw new Exception("テクスチャの反転に失敗しました: " + error);
++           }
++       }
++
++       public static void SetOverlayRenderTexture(ulong handle, RenderTexture renderTexture)
++       {
++           var nativeTexturePtr = renderTexture.GetNativeTexturePtr();
++           var texture = new Texture_t
++           {
++               eColorSpace = EColorSpace.Auto,
++               eType = ETextureType.DirectX,
++               handle = nativeTexturePtr
++           };
++           var error = OpenVR.Overlay.SetOverlayTexture(handle, ref texture);
++           if (error != EVROverlayError.None)
++           {
++               throw new Exception("テクスチャの描画に失敗しました: " + error);
++           }
++       }
++   }
+}
+```
+
+### 処理の呼び出し部分の変更
+移動した処理を OpenVRUtil から呼び出すように WatchOverlay.cs を修正します。
+
+```diff cs:WatchOverlay.cs
+using System;
+using UnityEngine;
+using Valve.VR;
++ using OpenVRUtil;
+
+public class WatchOverlay : MonoBehaviour
+{
+    public Camera camera;
+    private RenderTexture renderTexture;
+
+    private ulong overlayHandle = OpenVR.k_ulOverlayHandleInvalid;
+
+    [Range(0, 0.5f)] public float size;
+    [Range(-0.5f, 0.5f)] public float x;
+    [Range(-0.5f, 0.5f)] public float y;
+    [Range(-0.5f, 0.5f)] public float z;
+    [Range(0, 360)] public int rotationX;
+    [Range(0, 360)] public int rotationY;
+    [Range(0, 360)] public int rotationZ;
+
+    private void Start()
+    {
+-       InitOpenVR();
++       OpenVRUtil.System.InitOpenVR();
+-       overlayHandle = CreateOverlay("WatchOverlayKey", "WatchOverlay");
++       overlayHandle = Overlay.CreateOverlay("WatchOverlayKey", "WatchOverlay");
+
+        renderTexture = new RenderTexture(512, 512, 16, RenderTextureFormat.ARGBFloat);
+        camera.targetTexture = renderTexture;
+
+-       flipOverlayVertical(overlayHandle);
++       Overlay.flipOverlayVertical(overlayHandle);
+-       SetOverlaySize(overlayHandle, size);
++       Overlay.SetOverlaySize(overlayHandle, size);
+-       ShowOverlay(overlayHandle);
++       Overlay.ShowOverlay(overlayHandle);
+    }
+    
+    private void Update()
+    {
+        var leftControllerIndex = OpenVR.System.GetTrackedDeviceIndexForControllerRole(ETrackedControllerRole.LeftHand);
+        if (leftControllerIndex != OpenVR.k_unTrackedDeviceIndexInvalid)
+        {
+            var position = new Vector3(x, y, z);
+            var rotation = Quaternion.Euler(rotationX, rotationY, rotationZ);
+-           SetOverlayTransformRelative(overlayHandle, leftControllerIndex, position, rotation);
++           Overlay.SetOverlayTransformRelative(overlayHandle, leftControllerIndex, position, rotation);
+        }
+
+-       SetOverlayRenderTexture(overlayHandle, renderTexture);
++       Overlay.SetOverlayRenderTexture(overlayHandle, renderTexture);
+    }
+
+    private void OnDestroy()
+    {
+-       DestroyOverlay(overlayHandle);
++       Overlay.DestroyOverlay(overlayHandle);
+        OpenVRUtil.System.ShutdownOpenVR();
+    }
+}
+```
+
+## DashboardOverlay.cs へ初期化とクリーンアップを追加
+`OpenVR.Overlay.CreateDashboardOverlay()` に OpenVR の初期化とクリーンアップ処理を追加します。
+
+```diff cs:DashboardOverlay.cs
+using UnityEngine;
+using Valve.VR;
+using System;
++ using OpenVRUtil;
+
+public class DashboardOverlay : MonoBehaviour
+{
+    private ulong dashboardHandle = OpenVR.k_ulOverlayHandleInvalid;
+    private ulong thumbnailHandle = OpenVR.k_ulOverlayHandleInvalid;
+
+    private void Start()
+    {
++       OpenVRUtil.System.InitOpenVR();
+        
+        var error = OpenVR.Overlay.CreateDashboardOverlay("WatchDashboardKey", "Watch Setting", ref dashboardHandle, ref thumbnailHandle);
+        if (error != EVROverlayError.None)
+        {
+            throw new Exception("ダッシュボード‐バーレイの作成に失敗しました: " + error);
+        }
+    }
+
++   private void OnDestroy()
++   {
++       OpenVRUtil.System.ShutdownOpenVR();
++   }
+}
+```
+
+## オーバーレイのクリーンアップを追加する
+`DashboardOverlay.cs` にダッシュボードとサムネイルのオーバーレイの破棄を追加します。
+
+```diff cs:DashboardOverlay.cs
+public class DashboardOverlay : MonoBehaviour
+{
+    private ulong dashboardHandle = OpenVR.k_ulOverlayHandleInvalid;
+    private ulong thumbnailHandle = OpenVR.k_ulOverlayHandleInvalid;
+
+    private void Start()
+    {
+        OpenVRUtil.System.InitOpenVR();
+        
+        var error = OpenVR.Overlay.CreateDashboardOverlay("WatchDashboardKey", "Watch Setting", ref dashboardHandle, ref thumbnailHandle);
+        if (error != EVROverlayError.None)
+        {
+            throw new Exception("ダッシュボード‐バーレイの作成に失敗しました: " + error);
+        }
+    }
+
+    private void OnDestroy()
+    {
++       Overlay.DestroyOverlay(dashboardHandle);
++       Overlay.DestroyOverlay(thumbnailHandle);
+        OpenVRUtil.System.ShutdownOpenVR();
+    }
+}
+```
+
+## サムネイルの表示
+サムネイルオーバーレイに画像を表示します。
+以前画像の表示に使用した `SetOverlayFromFile()` と SNS のアイコンをそのまま使ってみます。
+
+```diff cs:DashboardOverlay.cs
+private void Start()
+{
+    OpenVRUtil.System.InitOpenVR();
+    
+    var error = OpenVR.Overlay.CreateDashboardOverlay("WatchDashboardKey", "Watch Setting", ref dashboardHandle, ref thumbnailHandle);
+    if (error != EVROverlayError.None)
+    {
+        throw new Exception("ダッシュボード‐バーレイの作成に失敗しました: " + error);
+    }
+
++   var filePath = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg");
++   Overlay.SetOverlayFromFile(thumbnailHandle, filePath);
+}
+```
+
+プログラムを実行して、ダッシュボードの下にサムネイルが表示されていることを確認します。
+
+![](/images/dashboard-thumbnail.jpg)
+
+ダッシュボードオーバーレイには、まだなに描画していないので、選択しても何も表示されません。
+サムネイルをポイントしたときに表示されるテキスト（Watch Setting）は、オーバーレイの name に設定した文字列です。
+
+## 設定画面の作成
+
+### 既存のオブジェクトを分ける
+Hierarchy で右クリック > Create Empty で空のゲームオブジェクトを作成します。
+オブジェクト名を `Watch` に変更します。
+既存の `WatchOverlay`, `Camera`, `Canvas` を `Watch` の中に移動させます。
+![](/images/watch-group.png)
+
+### ダッシュボード関連オブジェクトのグループ化
+同様に Hierarchy の最上位に Create Empty で空のゲームオブジェクトを作成します。
+オブジェクト名を `Dashboard` に変更します。
+`Dashboardoverlay` を `Dashboard` の中に移動させます。
+![](/images/dashboard-overlay-group.png)
+
+### カメラの作成
+`Dashboard` の下に Camera を新規作成します。
+
+### Canvas の作成
+`Dashboard` の下に UI > Canvas を新規作成します。
+![](/images/dashboard-canvas-camera.png)
+
+### カメラの設定
+Camera の Clear Flags を Solid Color に設定します。
+Camera の Background の色をクリックして、不透明な灰色 (RGBA = 32, 32, 32, 255) に設定します。
+Camera の AudioListener コンポーネントを削除します。
+![](/images/remove-dashboard-audio-listener.png)
+
+TODO: 色設定の画像を追加
+
+### Canvas の設定
+Canvas の Render Mode を Screen Space - Camera に設定します。
+Render Camera に、先ほど作成した Camera をドラッグします。
+Plane Distance を 10 に設定します。
+![](/images/dashboard-canvas-setting.png)
+
+### グループの移動
+`Watch` と `Dashboard` が重なっているので、`Dashboard` の Position の X を 20 に変更します。
+![](/images/shift-dashboard-group.png)
+
+### トグルの作成
+Hierarchy で `Dashboard/Canvas` を右クリック > Button - TextMeshPro を追加します。
+Hierarchy で作成した Button の下の階層にある `Text (TMP)` をクリックして、インスペクタからボタンのテキストを「Left Hand」に変更します。
+![](/images/left-hand-button.png)
+
+Hierarchy で Button ゲームオブジェクトを右クリック > Duplicate でボタンを複製します。
+先ほどと同様にしてテキストを「Right Hand」に変更します。
+
+左手用のボタンのオブジェクト名を `LeftHandButton`、右手用のボタンのオブジェクト名を `RightHandButton` に変更します。
+Scene ビューで `LeftHandButton` を少し上に移動、`RightHandButton` を少し下に移動してください。
+![](/images/buttons-layout.png)
+
+## ダッシュボードに描画
+
+### カメラの追加
+`DashboardOverlay.cs` に Camera 変数を追加します。
+```diff cs:Dashboardoverlay.cs
+public class DashboardOverlay : MonoBehaviour
+{
++   public Camera camera;
+    private ulong dashboardHandle = OpenVR.k_ulOverlayHandleInvalid;
+    private ulong thumbnailHandle = OpenVR.k_ulOverlayHandleInvalid;
+
+    private void Start()
+    {
+        OpenVRUtil.System.InitOpenVR();
+        
+        var error = OpenVR.Overlay.CreateDashboardOverlay("WatchDashboardKey", "Watch Setting", ref dashboardHandle, ref thumbnailHandle);
+        if (error != EVROverlayError.None)
+        {
+            throw new Exception("ダッシュボード‐バーレイの作成に失敗しました: " + error);
+        }
+
+        var filePath = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg");
+        Overlay.SetOverlayFromFile(thumbnailHandle, filePath);
+    }
+
+    ～省略～
+```
+
+Hierarchy で DashboardOverlay をクリックして、Camera 変数に Dashboard/Camera をドラッグして設定します。
+![](/images/add-dashboard-camera.png)
+
+### レンダーテクスチャを作成
+`DashboardOverlay.cs` で Render Texture の変数を作成して、カメラの映像が書き込まれるようにします。
+また、`flipOverlayVertical()` でテクスチャの上下をはんたんさせます。
+```diff cs:DashboardOverlay.cs
+public class DashboardOverlay : MonoBehaviour
+{
+    public Camera camera;
+    private ulong dashboardHandle = OpenVR.k_ulOverlayHandleInvalid;
+    private ulong thumbnailHandle = OpenVR.k_ulOverlayHandleInvalid;
++   private RenderTexture renderTexture; 
+
+    private void Start()
+    {
+        OpenVRUtil.System.InitOpenVR();
+        
+        var error = OpenVR.Overlay.CreateDashboardOverlay("WatchDashboardKey", "Watch Setting", ref dashboardHandle, ref thumbnailHandle);
+        if (error != EVROverlayError.None)
+        {
+            throw new Exception("ダッシュボード‐バーレイの作成に失敗しました: " + error);
+        }
+
+        var filePath = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg");
+        Overlay.SetOverlayFromFile(thumbnailHandle, filePath);
+        
++       renderTexture = new RenderTexture(1024, 768, 16, RenderTextureFormat.ARGBFloat);
++       camera.targetTexture = renderTexture;
++
++       Overlay.flipOverlayVertical(dashboardHandle);
+    }
+
+    ～省略～
+```
+
+### レンダーテクスチャをダッシュボードオーバーレイに描画
+Update() を作成して、Render Texture をオーバーレイに描画します。
+```diff cs:DashboardOverlay.cs
+public class DashboardOverlay : MonoBehaviour
+{
+    public Camera camera;
+    private ulong dashboardHandle = OpenVR.k_ulOverlayHandleInvalid;
+    private ulong thumbnailHandle = OpenVR.k_ulOverlayHandleInvalid;
+    private RenderTexture renderTexture; 
+
+    private void Start()
+    {
+        OpenVRUtil.System.InitOpenVR();
+        
+        var error = OpenVR.Overlay.CreateDashboardOverlay("WatchDashboardKey", "Watch Setting", ref dashboardHandle, ref thumbnailHandle);
+        if (error != EVROverlayError.None)
+        {
+            throw new Exception("ダッシュボード‐バーレイの作成に失敗しました: " + error);
+        }
+
+        var filePath = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg");
+        Overlay.SetOverlayFromFile(thumbnailHandle, filePath);
+        
+        renderTexture = new RenderTexture(1024, 768, 16, RenderTextureFormat.ARGBFloat);
+        camera.targetTexture = renderTexture;
+
+        Overlay.flipOverlayVertical(dashboardHandle);
+    }
+
++   void Update()
++   {
++       Overlay.SetOverlayRenderTexture(dashboardHandle, renderTexture);
++   }
+
+    ～省略～
+```
+
 
 ### 左右のどちらのコントローラに表示するかを保存する変数
 WatchOverlay.cs に左右のどちらの手に表示するかを決めるメンバを作成します。
@@ -345,20 +820,6 @@ DashboardOverlay.cs の Start() で、CreateDashboardOverlay() を実行して�
 前のページの時計の表示と同様に、RenderTexture から DirectX のテクスチャのポインタを取得して、`SetOverlayTexturePtr()` でオーバーレイに書き込みます。
 
 プログラムを実行後、SteamVR のダッシュボードを VR 内で開き、作成したダッシュボードが表示されていれば OK です。
-
-### サムネイルオーバーレイの表示
-ダッシュボードの下に表示されるサムネイルも表示しておきます。
-何でも良いので画像を準備します。
-ここでは、以前使った SNS のアイコンをサムネイルとして `SetOverlayFromFile()` で表示してみます。
-
-```cs
-private void Start()
-{
-  // ここで SetOverlayFromFile()
-}
-```
-
-プログラムを実行して、ダッシュボードの下にサムネイルが表示されていることを確認します。
 
 ## ダッシュボードのイベント取得
 

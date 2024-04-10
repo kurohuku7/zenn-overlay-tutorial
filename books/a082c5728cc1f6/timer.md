@@ -469,12 +469,12 @@ private void Update()
 -   {
 -       throw new Exception("テクスチャの描画に失敗しました: " + error);
 -   }
-+   SetOverlayRenderTexture(renderTexture);
++   SetOverlayRenderTexture(overlayHandle, renderTexture);
 }
 
 ～省略～
 
-+ private void SetOverlayRenderTexture(RenderTexture renderTexture)
++ private void SetOverlayRenderTexture(ulong handle, RenderTexture renderTexture)
 + {
 +     var nativeTexturePtr = renderTexture.GetNativeTexturePtr();
 +     var texture = new Texture_t
@@ -483,7 +483,7 @@ private void Update()
 +         eType = ETextureType.DirectX,
 +         handle = nativeTexturePtr
 +     };
-+     var error = OpenVR.Overlay.SetOverlayTexture(overlayHandle, ref texture);
++     var error = OpenVR.Overlay.SetOverlayTexture(handle, ref texture);
 +     if (error != EVROverlayError.None)
 +     {
 +         throw new Exception("テクスチャの描画に失敗しました: " + error);
@@ -536,7 +536,7 @@ public class WatchOverlay : MonoBehaviour
             SetOverlayTransformRelative(overlayHandle, leftControllerIndex, position, rotation);
         }
 
-        SetOverlayRenderTexture(renderTexture);
+        SetOverlayRenderTexture(overlayHandle, renderTexture);
     }
 
     private void OnDestroy()
@@ -650,7 +650,7 @@ public class WatchOverlay : MonoBehaviour
         }
     }
     
-    private void SetOverlayRenderTexture(RenderTexture renderTexture)
+    private void SetOverlayRenderTexture(ulong handle, RenderTexture renderTexture)
     {
         var nativeTexturePtr = renderTexture.GetNativeTexturePtr();
         var texture = new Texture_t
@@ -659,7 +659,7 @@ public class WatchOverlay : MonoBehaviour
             eType = ETextureType.DirectX,
             handle = nativeTexturePtr
         };
-        var error = OpenVR.Overlay.SetOverlayTexture(overlayHandle, ref texture);
+        var error = OpenVR.Overlay.SetOverlayTexture(handle, ref texture);
         if (error != EVROverlayError.None)
         {
             throw new Exception("テクスチャの描画に失敗しました: " + error);
