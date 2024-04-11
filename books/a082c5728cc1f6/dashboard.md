@@ -6,7 +6,7 @@ free: false
 Steam のダッシュボードに設定画面を作ります。
 設定画面で左右のコントローラどちらに時計を表示するか選べるようにします。
 
-TODO: ダッシュボードの画像
+![](/images/dashboard-preview.jpg)
 
 ## DashboardOverlay の作成
 `Scripts/DashboardOverlay.cs` を新規作成します。
@@ -14,7 +14,7 @@ TODO: ダッシュボードの画像
 
 ## ダッシュボードオーバーレイの作成
 ダッシュボードオーバーレイの作成は [CreateDashboardOverlay()](https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.CVROverlay.html#Valve_VR_CVROverlay_CreateDashboardOverlay_System_String_System_String_System_UInt64__System_UInt64__) で行います。（詳細は [Wiki](https://github.com/ValveSoftware/openvr/wiki/IVROverlay::CreateDashboardOverlay) を参照）
-下のコードを DashboardOverlay.cs へコピーしてください。
+下のコードを `DashboardOverlay.cs` へコピーしてください。
 
 ```cs:DashboardOverlay.cs
 using UnityEngine;
@@ -38,7 +38,7 @@ public class DashboardOverlay : MonoBehaviour
 ```
 
 作成するとダッシュボードとサムネイルの 2 つが作成され、それぞれのオーバーレイハンドルが取得されます。
-dashboardHandle が設定画面、thumbnailHandle がダッシュボードの下に表示されるアイコン用のオーバーレイです。
+`dashboardHandle` が設定画面、`thumbnailHandle` がダッシュボードの下に表示されるアイコン用のオーバーレイです。
 
 ## シーンに設置
 Hierarchy ビューで右クリック > Create Empty で空のゲームオブジェクトを作成します。
@@ -47,8 +47,8 @@ Hierarchy ビューで右クリック > Create Empty で空のゲームオブジ
 ![](/images/create-dashboard-object.png)
 
 ## OpenVR の初期化、クリーンアップ
-OpenVR.Overlay API を使用するためには、OpenVR が初期化されている必要があります。
-今回は、WatchOverlay.cs で作成した OpenVR の初期化処理を、共有のユーティリティとして抜き出して、他のクラスからも呼び出せるようにします。
+OpenVR の API を使用するためには、OpenVR が初期化されている必要があります。
+今回は、`WatchOverlay.cs` で作成した OpenVR の初期化処理を、共有のユーティリティとして抜き出して、他のクラスからも呼び出せるようにします。
 
 ### ユーティリティクラスの作成
 `Scripts/OpenVRUtil.cs` を作成します。
@@ -65,7 +65,7 @@ namespace OpenVRUtil
 }
 ```
 
-ここでの namespace は名前衝突の回避と、わかりやすさのためにつけているだけです。
+ここでの namespace は名前衝突の回避と、わかりやすさのためにつけています。
 
 ### OpenVR の初期化処理を移動
 `WatchOverlay.cs` から `InitOpenVR()` を `OpenVRUtil.cs` に移動します。
@@ -128,7 +128,7 @@ namespace OpenVRUtil
 ```
 
 ### OpenVR のクリーンアップ処理を移動
-同様に `ShutdownOpenVR()` も static メソッドとして移動します。
+同様に `ShutdownOpenVR()` も `static` メソッドとして移動します。
 
 
 ```diff cs:WatchOverlay.cs
@@ -311,7 +311,7 @@ namespace OpenVRUtil
 ```
 
 ### 処理の呼び出し部分の変更
-移動した処理を OpenVRUtil から呼び出すように WatchOverlay.cs を修正します。
+移動した処理を `OpenVRUtil` から呼び出すように `WatchOverlay.cs` を修正します。
 
 ```diff cs:WatchOverlay.cs
 using System;
@@ -322,8 +322,7 @@ using Valve.VR;
 public class WatchOverlay : MonoBehaviour
 {
     public Camera camera;
-    private RenderTexture renderTexture;
-
+    public RenderTexture renderTexture;
     private ulong overlayHandle = OpenVR.k_ulOverlayHandleInvalid;
 
     [Range(0, 0.5f)] public float size;
@@ -340,9 +339,6 @@ public class WatchOverlay : MonoBehaviour
 +       OpenVRUtil.System.InitOpenVR();
 -       overlayHandle = CreateOverlay("WatchOverlayKey", "WatchOverlay");
 +       overlayHandle = Overlay.CreateOverlay("WatchOverlayKey", "WatchOverlay");
-
-        renderTexture = new RenderTexture(512, 512, 16, RenderTextureFormat.ARGBFloat);
-        camera.targetTexture = renderTexture;
 
 -       flipOverlayVertical(overlayHandle);
 +       Overlay.flipOverlayVertical(overlayHandle);
@@ -439,7 +435,7 @@ public class DashboardOverlay : MonoBehaviour
 
 ## サムネイルの表示
 サムネイルオーバーレイに画像を表示します。
-以前画像の表示に使用した `SetOverlayFromFile()` と SNS のアイコンをそのまま使ってみます。
+以前画像の表示に使用した `SetOverlayFromFile()` と SNS のアイコンがあるので、それを使用します。
 
 ```diff cs:DashboardOverlay.cs
 private void Start()
@@ -461,8 +457,8 @@ private void Start()
 
 ![](/images/dashboard-thumbnail.jpg)
 
-ダッシュボードオーバーレイには、まだなに描画していないので、選択しても何も表示されません。
-サムネイルをポイントしたときに表示されるテキスト（Watch Setting）は、オーバーレイの name に設定した文字列です。
+ダッシュボードオーバーレイには、まだ何も描画していないので、選択しても表示されません。
+サムネイルにレーザポインタを当てたときに表示されるテキスト（ここでは "Watch Setting"）は、オーバーレイの name に設定した文字列です。
 
 ## 設定画面の作成
 
@@ -486,14 +482,28 @@ Hierarchy で右クリック > Create Empty で空のゲームオブジェクト
 ![](/images/dashboard-canvas-camera.png)
 
 ### カメラの設定
+ダッシュボード用のカメラについて、
 Camera の Clear Flags を Solid Color に設定します。
-Camera の Background の色をクリックして、不透明な灰色 (RGBA = 32, 32, 32, 255) に設定します。
+Camera の Background の色をクリックして、不透明な灰色 (RGBA = 64, 64, 64, 255) に設定します。
+![](/images/gray-bg-color.png)
+
 Camera の AudioListener コンポーネントを削除します。
 ![](/images/remove-dashboard-audio-listener.png)
 
-TODO: 色設定の画像を追加
+### Render Texture の作成
+ダッシュボード用の Render Texture を作成します。
+`Assets/RenderTexture` フォルダ内に Render Texture アセットを新規作成します。
+アセット名を `DashboardRenderTexture` に変更します。
+![](/images/create-dashboard-rendertexture.png)
+
+インペクタでサイズを 1024 x 768 に設定します。
+![](/images/set-dashboard-rendertexture-size.png)
+
+ダッシュボード用のカメラの Render Texture に、`DashboardRenderTexture` を設定します。
+![](/images/attach-dashboard-rendertexture.png)
 
 ### Canvas の設定
+ダッシュボード用の Canvas について
 Canvas の Render Mode を Screen Space - Camera に設定します。
 Render Camera に、先ほど作成した Camera をドラッグします。
 Plane Distance を 10 に設定します。
@@ -505,15 +515,26 @@ Plane Distance を 10 に設定します。
 
 ### ボタンの作成
 Hierarchy で `Dashboard/Canvas` を右クリック > Button - TextMeshPro を追加します。
-Hierarchy で作成した Button の下の階層にある `Text (TMP)` をクリックして、インスペクタからボタンのテキストを「Left Hand」に変更します。
+オブジェクト名を `LeftHandButton` に変更します。
+Hierarchy でボタンの下の階層にある `Text (TMP)` をクリックして、インスペクタからボタンのテキストを「Left Hand」に変更します。
 ![](/images/left-hand-button.png)
 
-Hierarchy で Button ゲームオブジェクトを右クリック > Duplicate でボタンを複製します。
-先ほどと同様にしてテキストを「Right Hand」に変更します。
+`LeftHandButton` の Width = 700、Height = 200 に設定します。
+![](/images/change-button-size.png)
 
-左手用のボタンのオブジェクト名を `LeftHandButton`、右手用のボタンのオブジェクト名を `RightHandButton` に変更します。
-Scene ビューで `LeftHandButton` を少し上に移動、`RightHandButton` を少し下に移動してください。
+ボタンのテキストの Font Size を 100 に設定します。
+![](/images/change-button-font-size.png)
+
+Hierarchy で `LeftHandButton` を右クリック > Duplicate でボタンを複製します。
+オブジェクト名を `RightHandButton` に変更します。
+先ほどと同様にテキストを「Right Hand」に変更します。
+![](/images/right-hand-button-text.png)
+
+`LeftHandButton` の Pos Y を 150 に、
+`RightHandButton` の Pos Y を -150 にして、上下に並べます。
 ![](/images/buttons-layout.png)
+
+これでボタンの作成は完了です。
 
 ## ダッシュボードに描画
 
@@ -543,19 +564,21 @@ public class DashboardOverlay : MonoBehaviour
     ～省略～
 ```
 
-Hierarchy で DashboardOverlay をクリックして、Camera 変数に Dashboard/Camera をドラッグして設定します。
+Hierarchy で `DashboardOverlay` をクリックして、`Camera` 変数に `Dashboard/Camera` をドラッグします。
 ![](/images/add-dashboard-camera.png)
 
-### レンダーテクスチャを作成
-`DashboardOverlay.cs` で Render Texture の変数を作成して、カメラの映像が書き込まれるようにします。
-また、`flipOverlayVertical()` でテクスチャの上下をはんたんさせます。
+### レンダーテクスチャの関連付け
+`DashboardOverlay.cs` でレンダーテクスチャの変数を作成して、カメラの映像が書き込まれるようにします。
+また、`flipOverlayVertical()` でテクスチャの上下を反転させておきます。
+`SetOverlaySize()` でオーバーレイのサイズを 2.5 m に設定します。
+
 ```diff cs:DashboardOverlay.cs
 public class DashboardOverlay : MonoBehaviour
 {
     public Camera camera;
++   public RenderTexture renderTexture; 
     private ulong dashboardHandle = OpenVR.k_ulOverlayHandleInvalid;
     private ulong thumbnailHandle = OpenVR.k_ulOverlayHandleInvalid;
-+   private RenderTexture renderTexture; 
 
     private void Start()
     {
@@ -569,25 +592,26 @@ public class DashboardOverlay : MonoBehaviour
 
         var filePath = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg");
         Overlay.SetOverlayFromFile(thumbnailHandle, filePath);
-        
-+       renderTexture = new RenderTexture(1024, 768, 16, RenderTextureFormat.ARGBFloat);
-+       camera.targetTexture = renderTexture;
-+
+
++       Overlay.SetOverlaySize(dashboardHandle, 2.5f);        
 +       Overlay.flipOverlayVertical(dashboardHandle);
     }
 
     ～省略～
 ```
 
+Hierarchy で `DashboardOverlay` を選択し、`Assets/RenderTextures/DashboardRenderTexture` を Render Texture へドラッグします。
+![](/images/attach-dashboard-rendertexture-to-overlay.png)
+
 ### レンダーテクスチャをダッシュボードオーバーレイに描画
-Update() を作成して、Render Texture をオーバーレイに描画します。
+`Update()` を作成して、Render Texture をオーバーレイに描画します。
 ```diff cs:DashboardOverlay.cs
 public class DashboardOverlay : MonoBehaviour
 {
     public Camera camera;
+    public RenderTexture renderTexture; 
     private ulong dashboardHandle = OpenVR.k_ulOverlayHandleInvalid;
     private ulong thumbnailHandle = OpenVR.k_ulOverlayHandleInvalid;
-    private RenderTexture renderTexture; 
 
     private void Start()
     {
@@ -605,6 +629,7 @@ public class DashboardOverlay : MonoBehaviour
         renderTexture = new RenderTexture(1024, 768, 16, RenderTextureFormat.ARGBFloat);
         camera.targetTexture = renderTexture;
 
+        Overlay.SetOverlaySize(dashboardHandle, 2.5f);
         Overlay.flipOverlayVertical(dashboardHandle);
     }
 
@@ -616,11 +641,30 @@ public class DashboardOverlay : MonoBehaviour
     ～省略～
 ```
 
+プログラムを実行して、ダッシュボードを開き、サムネイルをクリックしてください。
+設定画面が描画されていれば OK です。
+![](/images/dashboard-preview.jpg)
 
-### 左右のどちらのコントローラに表示するかを保存する変数
-WatchOverlay.cs に左右のどちらの手に表示するかを決めるメンバを作成します。
-```cs
-private ETrackedControllerRole targetHand = EtrackedControllerRole.LeftHand;
+## 左右コントローラの切り替え
+
+### 変数の作成
+`WatchOverlay.cs` に左右のどちらの手に表示するかを決める変数を作成します。
+`EtrackedControllerRole.LeftHand`, `ETrackedControllerRole.RightHand` が定義されているので、今回は `ETrackedControllerRole` 型を使います。
+```diff cs:DashboardOverlay.cs
+using UnityEngine;
+using Valve.VR;
+using System;
+using OpenVRUtil;
+
+public class DashboardOverlay : MonoBehaviour
+{
+    public Camera camera;
+    public RenderTexture renderTexture;
+    private ulong dashboardHandle = OpenVR.k_ulOverlayHandleInvalid;
+    private ulong thumbnailHandle = OpenVR.k_ulOverlayHandleInvalid;
++   private ETrackedControllerRole targetHand = EtrackedControllerRole.LeftHand;
+
+    ～省略～
 ```
 
 ### 左右の切り替え
