@@ -397,7 +397,6 @@ public class Watch : MonoBehaviour
         label.text = $"{hour:00}:{minute:00}:{second:00}";
     }
 }
-
 ```
 
 Text (TMP) に Watch.cs を追加します。

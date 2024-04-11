@@ -650,43 +650,150 @@ public class DashboardOverlay : MonoBehaviour
 ### 変数の作成
 `WatchOverlay.cs` に左右のどちらの手に表示するかを決める変数を作成します。
 `EtrackedControllerRole.LeftHand`, `ETrackedControllerRole.RightHand` が定義されているので、今回は `ETrackedControllerRole` 型を使います。
-```diff cs:DashboardOverlay.cs
-using UnityEngine;
-using Valve.VR;
-using System;
-using OpenVRUtil;
-
-public class DashboardOverlay : MonoBehaviour
+```diff cs:WatchOverlay.cs
+public class WatchOverlay : MonoBehaviour
 {
     public Camera camera;
     public RenderTexture renderTexture;
-    private ulong dashboardHandle = OpenVR.k_ulOverlayHandleInvalid;
-    private ulong thumbnailHandle = OpenVR.k_ulOverlayHandleInvalid;
-+   private ETrackedControllerRole targetHand = EtrackedControllerRole.LeftHand;
++   public ETrackedControllerRole targetHand = EtrackedControllerRole.LeftHand;
+
+    private ulong overlayHandle = OpenVR.k_ulOverlayHandleInvalid;
 
     ～省略～
 ```
 
-### 左右の切り替え
-GetTrackedDeviceIndexForControllerRole() で、設定されている値に応じて、左右のコントローラのどちらを取得するか変更する。
-```cs
-var targetHand = targetHand; // 保存された変数に応じて、左右どちらのコントローラに表示するかを切り替える
-   var leftControllerIndex = OpenVR.System.GetTrackedDeviceIndexForControllerRole(targethand);
-   if (leftControllerIndex != OpenVR.k_unTrackedDeviceIndexInvalid)
-   {
-       var position = new Vector3(x, y, z);
-       var rotation = Quaternion.Euler(rotationX, rotationY, rotationZ);
-       SetOverlayTransformRelative(overlayHandle, leftControllerIndex, position, rotation);
-   }
+### コントローラの取得を修正
+`targetHand` のコントローラの Device Index を取得するように修正します。
+
+```diff cs:WatchOverlay.cs
+private void Update()
+{
+-   var leftControllerIndex = OpenVR.System.GetTrackedDeviceIndexForControllerRole(ETrackedControllerRole.LeftHand);
++   var controllerIndex = OpenVR.System.GetTrackedDeviceIndexForControllerRole(targetHand);
+
+-   if (leftControllerIndex != OpenVR.k_unTrackedDeviceIndexInvalid)
++   if (controllerIndex != OpenVR.k_unTrackedDeviceIndexInvalid)
+    {
+        var position = new Vector3(x, y, z);
+        var rotation = Quaternion.Euler(rotationX, rotationY, rotationZ);
+-       Overlay.SetOverlayTransformRelative(overlayHandle, leftControllerIndex, position, rotation);
++       Overlay.SetOverlayTransformRelative(overlayHandle, controllerIndex, position, rotation);
+    }
+
+    Overlay.SetOverlayRenderTexture(overlayHandle, renderTexture);
+}
 ```
 
-targetHand の初期値を `ETrackedControllerRole.RightHand` に変更してみて、右手にも表示できることを確認します。
-```diff cs
--private ETrackedControllerRole targetHand = EtrackedControllerRole.LeftHand;
-+private ETrackedControllerRole targetHand = EtrackedControllerRole.RightHand;
+`WatchOverlay` のインスペクタで、`Target Hand` を `Right Hand` に切り替えて、右手に時刻が表示されることを確認します。
+![](/images/change-hand-inspector.png)
+
+ただし、左手のコントローラを基準にして位置を設定しているため、右手に表示した場合は、手のひら側に表示されます。
+![](/images/wrong-right-hand-position.jpg)
+
+### 右手用の座標を設定
+右手に切り替えたときに、ちょうどいい位置にオーバーレイが表示されるように位置を調整します。
+既存の設定値をコピーして、右手用の位置を指定するための変数を作ります。
+
+左手用は変数名に left を追加します。
+左手と右手で size は同じとします。
+```diff cs:WatchOverlay.cs
+public class WatchOverlay : MonoBehaviour
+{
+    public Camera camera;
+    public RenderTexture renderTexture;
+    public ETrackedControllerRole targetHand = ETrackedControllerRole.RightHand;
+
+    private ulong overlayHandle = OpenVR.k_ulOverlayHandleInvalid;
+
+    [Range(0, 0.5f)] public float size;
+-   [Range(-0.5f, 0.5f)] public float x;
+-   [Range(-0.5f, 0.5f)] public float y;
+-   [Range(-0.5f, 0.5f)] public float z;
+-   [Range(0, 360)] public int rotationX;
+-   [Range(0, 360)] public int rotationY;
+-   [Range(0, 360)] public int rotationZ;
+
++   [Range(-0.5f, 0.5f)] public float leftX;
++   [Range(-0.5f, 0.5f)] public float leftY;
++   [Range(-0.5f, 0.5f)] public float leftZ;
++   [Range(0, 360)] public int leftRotationX;
++   [Range(0, 360)] public int leftRotationY;
++   [Range(0, 360)] public int leftRotationZ;
+
++   [Range(-0.5f, 0.5f)] public float rightX;
++   [Range(-0.5f, 0.5f)] public float rightY;
++   [Range(-0.5f, 0.5f)] public float rightZ;
++   [Range(0, 360)] public int rightRotationX;
++   [Range(0, 360)] public int rightRotationY;
++   [Range(0, 360)] public int rightRotationZ;
+
 ```
 
-確認できたら、初期値を左手に戻しておきます。
+targetHand に合わせて、それぞれの位置をセットするように変更します。
+```diff cs:WatchOverlay.cs
+    private void Update()
+    {
++       Vector3 position;
++       Quaternion rotation;
++       
++       if (targetHand == ETrackedControllerRole.LeftHand)
++       {
++           position = new Vector3(leftX, leftY, leftZ);
++           rotation = Quaternion.Euler(leftRotationX, leftRotationY, leftRotationZ);
++       }
++       else
++       {
++           position = new Vector3(rightX, rightY, rightZ);
++           rotation = Quaternion.Euler(rightRotationX, rightRotationY, rightRotationZ);
++       }
++       
+        var controllerIndex = OpenVR.System.GetTrackedDeviceIndexForControllerRole(targetHand);
+        if (controllerIndex != OpenVR.k_unTrackedDeviceIndexInvalid)
+        {
+-           var position = new Vector3(x, y, z);
+-           var rotation = Quaternion.Euler(rotationX, rotationY, rotationZ);
+            Overlay.SetOverlayTransformRelative(overlayHandle, controllerIndex, position, rotation);
+        }
+
+        Overlay.SetOverlayRenderTexture(overlayHandle, renderTexture);
+    }
+
+```
+
+インスペクタで各座標と角度を入力します。
+左手用はメモした値を入力し、右手用は前回と同じようにプログラムを実行しながら、インスペクタでちょうどいい値に設定してください。
+```diff cs:WatchOverlay.cs
+private void Update()
+{
+    var controllerIndex = OpenVR.System.GetTrackedDeviceIndexForControllerRole(targetHand);
+    if (controllerIndex != OpenVR.k_unTrackedDeviceIndexInvalid)
+    {
+-       var position = new Vector3(x, y, z);
+-       var rotation = Quaternion.Euler(rotationX, rotationY, rotationZ);
++       var position = new Vector3(rightX, rightY, rightZ);
++       var rotation = Quaternion.Euler(rightRotationX, rightRotationY, rightRotationZ);
+
+        Overlay.SetOverlayTransformRelative(overlayHandle, controllerIndex, position, rotation);
+    }
+
+    Overlay.SetOverlayRenderTexture(overlayHandle, renderTexture);
+}
+
+```
+
+以下は右手に設定した値の例です。
+```
+右手用のパラメータ例
+x = 0.04
+y = 0.003
+z = -0.107
+rotationX = 24
+rotationY = 258
+rotationZ = 179
+```
+
+右手のちょうどいい位置に表示されていれば OK です。
+![](/images/correct-right-hand.jpg)
 
 ### ボタンとのつなぎ込み
 「左手に表示」ボタンを押したら左手に、「右手に表示」ボタンを押したら右手に表示されるようにしています。

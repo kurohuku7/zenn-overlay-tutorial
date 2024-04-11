@@ -300,7 +300,7 @@ VR 内で SteamVR のダッシュボードを開き、デスクトップ画面�
 ![](/images/adjust-with-vrview.gif)
 *HMD を被りたくないときはこれで*
 
-調整できたら、**プログラムを終了させずに**各パラメータの数値をメモしてください。
+こちらが調整したパラメータの例です。
 ```
 パラメータの例
 size = 0.08
@@ -312,7 +312,10 @@ rotationY = 262
 rotationZ = 0
 ```
 
-プログラムを終了させた後、メモした値をインスペクタに再度入力します。
+調整できたら、インスペクタで `WatchOverlay` コンポーネントを右クリックして、Copy Component を選択します。
+![](/images/copy-component.png)
+
+プログラムを終了させた後、もう 1 度 `WatchOverlay` コンポーネントを右クリックして、Paste Component Value で、コピーした値をペーストします。
 ![](/images/set-overlay-position-inspector.png)
 
 プログラムを実行して、調整した位置にオーバーレイが表示されていれば OK です。
