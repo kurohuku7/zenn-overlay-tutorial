@@ -645,7 +645,7 @@ public class DashboardOverlay : MonoBehaviour
 設定画面が描画されていれば OK です。
 ![](/images/dashboard-preview.jpg)
 
-## 左右コントローラの切り替え
+## 右手のコントローラに時刻を表示
 
 ### 変数の作成
 `WatchOverlay.cs` に左右のどちらの手に表示するかを決める変数を作成します。
@@ -795,33 +795,59 @@ rotationZ = 179
 右手のちょうどいい位置に表示されていれば OK です。
 ![](/images/correct-right-hand.jpg)
 
-### ボタンとのつなぎ込み
-「左手に表示」ボタンを押したら左手に、「右手に表示」ボタンを押したら右手に表示されるようにしています。
+## ボタンのイベント作成
+ボタンのクリックイベントで、どちらのコントローラに表示するかを切り替えられるようにします。
+Scripts フォルダに `WatchSettingController.cs` を新規作成します。
+Hierarchy を右クリックして Create Empty でからのオブジェクトを作成し、`SettingController` という名前に変更します。
+作成した `SettingController` オブジェクトに `WatchSettingController.cs` を追加します。
+![](/images/add-watch-controller.png)
 
-Scripts フォルダに WatchSettingController.cs を新規作成します。
 
-WatchSettingController に WatchOverlay の参照をもたせます。
-インスペクタから WatchOverlay コンポーネントをドラッグして参照をセットします。
+`WatchSettingController` に `WatchOverlay` の変数を作成します。
 ```cs:WatchSettingController.cs
-[SerializeField] private WatchOverlay watchOverlay;
-```
+using UnityEngine;
 
-WatchSettingController に、ボタンが押されたときのイベントを定義します。
-```cs:WatchSettingController.cs
-public OnLeftHandButtonClick()
+public class WatchSettingController : MonoBehaviour
 {
-  watchOverlay.targetHand = EtrackedControllerRole.LeftHand;
-}
-
-public OnRightHandButtonClick()
-{
-  watchOverlay.targetHand = EtrackedControllerRole.RightHand;
+    [SerializeField] private WatchOverlay watchOverlay;
 }
 ```
 
-### UnityEditor 上で動作確認
-Unity Editor の Play Mode で、マウスでボタンをクリックすると、左右のコントローラのどちらに時計を表示するか切り替えられるようになっていることを確認します。’
+インスペクタから `WatchOverlay` コンポーネントの Watch Overlay にドラッグします。
+![](/images/attach-watch-overlay.png)
 
+`WatchSettingController.cs` に、ボタンが押されたときのイベントを定義します。
+```diff cs:WatchSettingController.cs
+using UnityEngine;
++ using Valve.VR;
+
+public class WatchSettingController : MonoBehaviour
+{
+    [SerializeField] private WatchOverlay watchOverlay;
+    
++   public void OnLeftHandButtonClick()
++   {
++       watchOverlay.targetHand = ETrackedControllerRole.LeftHand;
++   }
++
++   public void OnRightHandButtonClick()
++   {
++       watchOverlay.targetHand = ETrackedControllerRole.RightHand;
++   }
+}
+
+```
+
+## ボタンにイベントを割り当て
+Hierarchy の Dashboard > Canvas > LeftHandButton を選択します。
+インスペクタで `Button` コンポーネントの `OnClick()` の + をクリックします。
+`SettingController` を OnClick へドラッグして、`WatchSettingController.OnLeftHandButtonClick()` を設定します。
+![](/images/attach-left-button-event.png)
+
+同様に `RightHandButton` の `OnClick()` に `WatchSettingController.OnRightHandButtonClick()` を設定します。
+![](/images/attach-right-hand-event.png)
+
+## Overlay Viewer でイベントの動作確認
 
 ### Dashboard Overlay の作成
 Dashboard Overlay の表示には `CreateDashboardOverlay()` を使用します。
