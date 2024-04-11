@@ -18,8 +18,11 @@ Unity のシーンに
 - Light → Directional Light
 
 を新規作成します。
-カメラに Cube が映るように、それぞれを配置してください。
-![](/images/cube-scene.png)
+
+![](/images/3d-scene-hierarchy.png)
+
+カメラに Cube が映るように配置してください。細かい部分は適当で大丈夫です。
+![](/images/3d-scene-layout.png)
 
 ### Cube を回転させる
 リアルタイムに動いているカメラ映像を作りたいので、Cube が回転するアニメーションを作ります。
@@ -51,7 +54,6 @@ public class Rotate : MonoBehaviour
 public class WatchOverlay : MonoBehaviour
 {
 +   public Camera camera;
-
     private ulong overlayHandle = OpenVR.k_ulOverlayHandleInvalid;
 
     [Range(0, 0.5f)] public float size;
@@ -68,7 +70,7 @@ public class WatchOverlay : MonoBehaviour
 ![](/images/attach-camera.png)
 
 ### 画像ファイルのコードを削除
-画像ファイルは、もう使わないので処理を削除します。
+画像ファイルの表示処理を削除します。
 ```diff cs:WatchOverlay.cs
 private void Start()
 {
@@ -79,21 +81,36 @@ private void Start()
 -   SetOverlayFromFile(overlayHandle, filePath);
 
     SetOverlaySize(overlayHandle, size);
-
     ShowOverlay(overlayHandle);
 }
 ```
 
-
 ### RenderTexture の作成
-[RenderTexture](https://docs.unity3d.com/ja/2018.4/Manual/class-RenderTexture.html) を作成して、カメラの映像が書き込まれるようにします。
+`Assets` の下に `RenderTextures` フォルダを作成します。
+`RenderTextures` フォルダを右クリック > Create > RenderTexture で Render Texture アセットを作成します。
+アセット名を `WatchRenderTexture` に変更します。
+![](/images/watch-render-texture-asset.png)
+
+### カメラ映像を RenderTexture に書き出す
+Camera をクリックして、インスペクタの Target Texture に WatchRenderTexture をドラッグします。
+![](/images/attach-rendertexture-to-camera.png)
+これでカメラの映像が WatchRenderTexture に書き込まれるようになります。
+
+### RenderTexture の設定
+`WatchRenderTexture` をクリックしてインスペクタを表示します。
+Size を 512 x 512 に変更します。
+![](/images/change-size.png)
+
+:::details スクリプトで RenderTexture を作成する
+事前に RenderTexture のアセットを作成せずに、コード内で RenderTexture を生成したい場合は、下記のように作成できます。
+
 ```diff cs:WatchOverlay.cs
 public class WatchOverlay : MonoBehaviour
 {
     public Camera camera;
 +   private RenderTexture renderTexture;
-    
     private ulong overlayHandle = OpenVR.k_ulOverlayHandleInvalid;
+
     [Range(0, 0.5f)] public float size = 0.5f;
     [Range(-0.5f, 0.5f)] public float x;
     [Range(-0.5f, 0.5f)] public float y;
@@ -107,32 +124,40 @@ public class WatchOverlay : MonoBehaviour
         InitOpenVR();
         overlayHandle = CreateOverlay("WatchOverlayKey", "WatchOverlay");
 
++       // カメラの targetTexture に renderTexture を設定すると、カメラの映像が renderTexture へ書き込まれるようになります。
 +       renderTexture = new RenderTexture(512, 512, 16, RenderTextureFormat.ARGBFloat);
 +       camera.targetTexture = renderTexture;
         
+        SetOverlaySize(overlayHandle, size);
         ShowOverlay(overlayHandle);
     }
 
     ～省略～
 ```
 
-カメラの targetTexture に renderTexture を設定することで、カメラの映像が renderTexture へ書き込まれるようになります。
-
-:::details Gamma Color Space に対応させる場合
-チュートリアルの環境ではデフォルトで Linear Color Space になっていますが、
-Gamma Color Space を使用する場合は、RenderTexture のカラー形式を RenderTextureFormat.ARGB32 にすると描画されます。
-プロジェクトの Color Space に合わせて変更する場合は、下記のようなコードのになります。
-```cs
-var colorFormat = QualitySettings.activeColorSpace == ColorSpace.Linear ? RenderTextureFormat.ARGBFloat : RenderTextureFormat.ARGB32;
-renderTexture = new RenderTexture(512, 512, 16, colorFormat);
-```
+Render Texture をアセットとして作成する場合、事前にサイズを設定することで、シーン上でカメラ映像のプレビューが実際の実行環境と同じ見た目で確認できるという理由でアセットを作成しています。
 :::
 
-### ネイティブテクスチャの取得
-OpenVR に渡すテクスチャは Unity の下のレイヤーで使われている DirectX や OpenGL のテクスチャになります。
-Unity のテクスチャ型は、そのままでは使えないので、GetNativeTexturePtr() を使って DirectX や OpenGL のネイティブテクスチャのポインタを取得します。
+### Render Texture の変数を作成
+RenderTexture の変数を作成します。
+```diff cs:WatchOverlay.cs
+public class WatchOverlay : MonoBehaviour
+{
+    public Camera camera;
++   public RenderTexture renderTexture;
+    private ulong overlayHandle = OpenVR.k_ulOverlayHandleInvalid;
 
-Update() 内で [GetNativeTexturePtr()](https://docs.unity3d.com/ScriptReference/Texture.GetNativeTexturePtr.html) を呼び出します。
+    ～省略～
+```
+
+`WatchOverlay` のインスペクタで、`renderTexture` に `WatchRenderTexture` アセットを設定します。
+![](/images/attach-render-texture-to-overlay.png)
+
+### ネイティブテクスチャの取得
+OpenVR に渡すテクスチャは Unity のテクスチャの下のレイヤーで使われている DirectX や OpenGL といったグラフィックス API のテクスチャになります。
+[GetNativeTexturePtr()](https://docs.unity3d.com/ScriptReference/Texture.GetNativeTexturePtr.html) を使って Unity のテクスチャから DirectX や OpenGL のテクスチャのポインタを取得します。
+
+`Update()` 内で `GetNativeTexturePtr()` を呼び出します。
 
 ```diff cs:WatchOverlay.cs
 ～省略～
@@ -141,10 +166,7 @@ private void Start()
 {        
     InitOpenVR();
     overlayHandle = CreateOverlay("WatchOverlayKey", "WatchOverlay");
-
-    renderTexture = new RenderTexture(512, 512, 16, RenderTextureFormat.ARGBFloat);
-    camera.targetTexture = renderTexture;
-    
+    SetOverlaySize(overlayHandle, size);
     ShowOverlay(overlayHandle);
 }
     
@@ -166,13 +188,13 @@ private void Update()
 ```
 
 :::details レンダリングスレッドの同期について
-[GetNativeTexturePtr()](https://docs.unity3d.com/ScriptReference/Texture.GetNativeTexturePtr.html) のドキュメントでは、GetNativeTexturePtr() は初期化時に一度だけ呼び出すことが推奨されています。
-しかしオーバーレイへの描画処理は、レンダリングスレッドが同期した状態で実行しなければクラッシュすることがあるため、スレッドの同期のために敢えて Update() 内で GetNativeTexturePtr() を呼び出しています。
-GetNativeTexturePtr() を呼び出した後に、続けてオーバーレイへの描画処理を書きます。
+[GetNativeTexturePtr() のドキュメント](https://docs.unity3d.com/ScriptReference/Texture.GetNativeTexturePtr.html)では、`GetNativeTexturePtr()` は初期化時に一度だけ呼び出すことが推奨されています。
+しかしオーバーレイへの描画処理は、レンダリングスレッドが同期した状態で実行しなければクラッシュすることがあるため、スレッドの同期のために敢えて `Update()` 内で `GetNativeTexturePtr()` を呼び出しています。
+`GetNativeTexturePtr()` を呼び出した後に、続けてオーバーレイへの描画処理を書きます。
 :::
 
 ### OpenVR のテクスチャを作成
-OpenVR の Texture_t 型の変数を作成します。
+OpenVR の `Texture_t` 型の変数を作成します。
 
 ```diff cs:WatchOverlay.cs
 private void Update()
@@ -195,8 +217,7 @@ private void Update()
 }
 ```
 
-オーバーレイに描画するテクスチャは、この Texture_t 型で渡します。
-handle に、先ほど取得したネイティブテクスチャのポインタ nativeTexturePtr をセットします。
+`handle` に、先ほど取得したテクスチャのポインタ `nativeTexturePtr` をセットします。
 
 :::details DirectX 以外に対応させる場合
 チュートリアルの環境では、デフォルトで DirectX が使用されています。
@@ -278,9 +299,6 @@ private void Start()
     InitOpenVR();
     overlayHandle = CreateOverlay("WatchOverlayKey", "WatchOverlay");
 
-    renderTexture = new RenderTexture(512, 512, 16, RenderTextureFormat.ARGBFloat);
-    camera.targetTexture = renderTexture;
-    
 +   var bounds = new VRTextureBounds_t
 +   {
 +       uMin = 0,
@@ -402,8 +420,6 @@ private void Start()
 {
     InitOpenVR();
     overlayHandle = CreateOverlay("WatchOverlayKey", "WatchOverlay");
-    renderTexture = new RenderTexture(512, 512, 16, RenderTextureFormat.ARGBFloat);
-    camera.targetTexture = renderTexture;
     
 -   var bounds = new VRTextureBounds_t
 -   {
@@ -501,8 +517,7 @@ using Valve.VR;
 public class WatchOverlay : MonoBehaviour
 {
     public Camera camera;
-    private RenderTexture renderTexture;
-
+    public RenderTexture renderTexture;
     private ulong overlayHandle = OpenVR.k_ulOverlayHandleInvalid;
 
     [Range(0, 0.5f)] public float size;
@@ -517,9 +532,6 @@ public class WatchOverlay : MonoBehaviour
     {
         InitOpenVR();
         overlayHandle = CreateOverlay("WatchOverlayKey", "WatchOverlay");
-
-        renderTexture = new RenderTexture(512, 512, 16, RenderTextureFormat.ARGBFloat);
-        camera.targetTexture = renderTexture;
 
         flipOverlayVertical(overlayHandle);
         SetOverlaySize(overlayHandle, size);

@@ -200,6 +200,15 @@ namespace OpenVRUtil
 オーバーレイ関連の処理も `WatchOverlay.cs` から `OpenVRUtil.cs` へ移動します。
 `CreateOverlay()` から `SetOverlayRenderTexture()` までの処理を移動します。
 
+- `CreateOverlay()`
+- `DestroyOverlay()`
+- `ShowOverlay()`
+- `SetOverlayFromFile()`
+- `SetOverlaySize()`
+- `SetOverlayTransformRelative()`
+- `flipOverlayVertical()`
+- `SetOverlayRenderTexture()`
+
 ```diff cs:WatchOverlay.cs
 private void OnDestroy()
 {
@@ -219,78 +228,7 @@ private void OnDestroy()
 -     return handle;
 - }
 - 
-- private void DestroyOverlay(ulong handle)
-- {
--     if (handle != OpenVR.k_ulOverlayHandleInvalid)
--     {
--         OpenVR.Overlay.DestroyOverlay(handle);
--     }
-- }
-- 
-- private void ShowOverlay(ulong handle)
-- {
--     var error = OpenVR.Overlay.ShowOverlay(handle);
--     if (error != EVROverlayError.None)
--     {
--         throw new Exception("オーバーレイの表示に失敗しました: " + error);
--     }
-- }
-- 
-- private void SetOverlayFromFile(ulong handle, string path)
-- {
--     var error = OpenVR.Overlay.SetOverlayFromFile(handle, path);
--     if (error != EVROverlayError.None)
--     {
--         throw new Exception("画像ファイルの描画に失敗しました: " + error);
--     }
-- }
-- 
-- private void SetOverlaySize(ulong handle, float size)
-- {
--     var error = OpenVR.Overlay.SetOverlayWidthInMeters(handle, size);
--     if (error != EVROverlayError.None)
--     {
--         throw new Exception("オーバーレイのサイズ設定に失敗しました: " + error);
--     }
-- }
-- 
-- private void SetOverlayTransformAbsolute(ulong handle, Vector3 position, Quaternion rotation)
-- {
--     var rigidTransform = new SteamVR_Utils.RigidTransform(position, rotation);
--     var matrix = rigidTransform.ToHmdMatrix34();
--     var error = OpenVR.Overlay.SetOverlayTransformAbsolute(handle, ETrackingUniverseOrigin.TrackingUniverseStanding, ref matrix);
--     if (error != EVROverlayError.None)
--     {
--         throw new Exception("オーバーレイの位置設定に失敗しました: " + error);
--     }
-- }
-- 
-- private void SetOverlayTransformRelative(ulong handle, uint deviceIndex, Vector3 position, Quaternion rotation)
-- {
--     var rigidTransform = new SteamVR_Utils.RigidTransform(position, rotation);
--     var matrix = rigidTransform.ToHmdMatrix34();
--     var error = OpenVR.Overlay.SetOverlayTransformTrackedDeviceRelative(handle, deviceIndex, ref matrix);
--     if (error != EVROverlayError.None)
--     {
--         throw new Exception("オーバーレイの位置設定に失敗しました: " + error);
--     }
-- }
-- 
-- private void flipOverlayVertical(ulong handle)
-- {
--     var bounds = new VRTextureBounds_t
--     {
--         uMin = 0,
--         uMax = 1,
--         vMin = 1,
--         vMax = 0
--     };
--     var error = OpenVR.Overlay.SetOverlayTextureBounds(handle, ref bounds);
--     if (error != EVROverlayError.None)
--     {
--         throw new Exception("テクスチャの反転に失敗しました: " + error);
--     }
-- }
+- ～省略～
 - 
 - private void SetOverlayRenderTexture(RenderTexture renderTexture)
 - {
@@ -351,78 +289,7 @@ namespace OpenVRUtil
 +           return handle;
 +       }
 +
-+       public static void DestroyOverlay(ulong handle)
-+       {
-+           if (handle != OpenVR.k_ulOverlayHandleInvalid)
-+           {
-+               OpenVR.Overlay.DestroyOverlay(handle);
-+           }
-+       }
-+
-+       public static void ShowOverlay(ulong handle)
-+       {
-+           var error = OpenVR.Overlay.ShowOverlay(handle);
-+           if (error != EVROverlayError.None)
-+           {
-+               throw new Exception("オーバーレイの表示に失敗しました: " + error);
-+           }
-+       }
-+
-+       public static void SetOverlayFromFile(ulong handle, string path)
-+       {
-+           var error = OpenVR.Overlay.SetOverlayFromFile(handle, path);
-+           if (error != EVROverlayError.None)
-+           {
-+               throw new Exception("画像ファイルの描画に失敗しました: " + error);
-+           }
-+       }
-+
-+       public static void SetOverlaySize(ulong handle, float size)
-+       {
-+           var error = OpenVR.Overlay.SetOverlayWidthInMeters(handle, size);
-+           if (error != EVROverlayError.None)
-+           {
-+               throw new Exception("オーバーレイのサイズ設定に失敗しました: " + error);
-+           }
-+       }
-+
-+       public static void SetOverlayTransformAbsolute(ulong handle, Vector3 position, Quaternion rotation)
-+       {
-+           var rigidTransform = new SteamVR_Utils.RigidTransform(position, rotation);
-+           var matrix = rigidTransform.ToHmdMatrix34();
-+           var error = OpenVR.Overlay.SetOverlayTransformAbsolute(handle, ETrackingUniverseOrigin.TrackingUniverseStanding, ref matrix);
-+           if (error != EVROverlayError.None)
-+           {
-+               throw new Exception("オーバーレイの位置設定に失敗しました: " + error);
-+           }
-+       }
-+
-+       public static void SetOverlayTransformRelative(ulong handle, uint deviceIndex, Vector3 position, Quaternion rotation)
-+       {
-+           var rigidTransform = new SteamVR_Utils.RigidTransform(position, rotation);
-+           var matrix = rigidTransform.ToHmdMatrix34();
-+           var error = OpenVR.Overlay.SetOverlayTransformTrackedDeviceRelative(handle, deviceIndex, ref matrix);
-+           if (error != EVROverlayError.None)
-+           {
-+               throw new Exception("オーバーレイの位置設定に失敗しました: " + error);
-+           }
-+       }
-+
-+       public static void flipOverlayVertical(ulong handle)
-+       {
-+           var bounds = new VRTextureBounds_t
-+           {
-+               uMin = 0,
-+               uMax = 1,
-+               vMin = 1,
-+               vMax = 0
-+           };
-+           var error = OpenVR.Overlay.SetOverlayTextureBounds(handle, ref bounds);
-+           if (error != EVROverlayError.None)
-+           {
-+               throw new Exception("テクスチャの反転に失敗しました: " + error);
-+           }
-+       }
++       ～省略～
 +
 +       public static void SetOverlayRenderTexture(ulong handle, RenderTexture renderTexture)
 +       {
@@ -636,7 +503,7 @@ Plane Distance を 10 に設定します。
 `Watch` と `Dashboard` が重なっているので、`Dashboard` の Position の X を 20 に変更します。
 ![](/images/shift-dashboard-group.png)
 
-### トグルの作成
+### ボタンの作成
 Hierarchy で `Dashboard/Canvas` を右クリック > Button - TextMeshPro を追加します。
 Hierarchy で作成した Button の下の階層にある `Text (TMP)` をクリックして、インスペクタからボタンのテキストを「Left Hand」に変更します。
 ![](/images/left-hand-button.png)
