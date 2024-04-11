@@ -363,17 +363,25 @@ public class WatchOverlay : MonoBehaviour
 +       Overlay.SetOverlayRenderTexture(overlayHandle, renderTexture);
     }
 
++   private void OnApplicationQuit()
++   {
++       Overlay.DestroyOverlay(overlayHandle);
++   }
+
     private void OnDestroy()
     {
 -       DestroyOverlay(overlayHandle);
-+       Overlay.DestroyOverlay(overlayHandle);
         OpenVRUtil.System.ShutdownOpenVR();
     }
 }
 ```
 
+複数個所から `ShutdownOpenVR()` が呼び出されても良いように、`DestroyOverlay()` は、`OnDestory()` より先に実行される `OnApplicationQuit()` に移動します。
+https://docs.unity3d.com/Manual/ExecutionOrder.html
+
 ## DashboardOverlay.cs へ初期化とクリーンアップを追加
 `OpenVR.Overlay.CreateDashboardOverlay()` に OpenVR の初期化とクリーンアップ処理を追加します。
+
 
 ```diff cs:DashboardOverlay.cs
 using UnityEngine;
@@ -424,10 +432,14 @@ public class DashboardOverlay : MonoBehaviour
         }
     }
 
-    private void OnDestroy()
-    {
++   private void OnApplicationQuit()
++   {
 +       Overlay.DestroyOverlay(dashboardHandle);
 +       Overlay.DestroyOverlay(thumbnailHandle);
++   }
+
+    private void OnDestroy()
+    {
         OpenVRUtil.System.ShutdownOpenVR();
     }
 }
@@ -835,7 +847,6 @@ public class WatchSettingController : MonoBehaviour
 +       watchOverlay.targetHand = ETrackedControllerRole.RightHand;
 +   }
 }
-
 ```
 
 ## ボタンにイベントを割り当て
@@ -847,55 +858,41 @@ Hierarchy の Dashboard > Canvas > LeftHandButton を選択します。
 同様に `RightHandButton` の `OnClick()` に `WatchSettingController.OnRightHandButtonClick()` を設定します。
 ![](/images/attach-right-hand-event.png)
 
-## Overlay Viewer でイベントの動作確認
-
-### Dashboard Overlay の作成
-Dashboard Overlay の表示には `CreateDashboardOverlay()` を使用します。
-`CreateDashboardOverlay()` でダッシュボードオーバーレイを作成すると、`CreateOverlay()` とは異なり 2 枚のオーバーレイのハンドルがセットされます。
-
-片方はダッシュボードのコンテンツを表示するオーバーレイ、もう片方がダッシュボードの下に表示されるサムネイルのオーバーレイです。
-基本的に使い方は通常の Overlay と同様ですが、表示位置はダッシュボードに固定になるため、位置の指定は行いません。
-
-DashboardOverlay.cs の Start() で、CreateDashboardOverlay() を実行して、ダッシュボードとサムネイルのハンドルを取得します。
-
-### Dashboard Overlay の描画
-
-先ほど作成した設定画面の Render Texture を Dashboard Overlay に描画します。
-前のページの時計の表示と同様に、RenderTexture から DirectX のテクスチャのポインタを取得して、`SetOverlayTexturePtr()` でオーバーレイに書き込みます。
-
-プログラムを実行後、SteamVR のダッシュボードを VR 内で開き、作成したダッシュボードが表示されていれば OK です。
 
 ## ダッシュボードのイベント取得
+ダッシュボードでボタンがクリックされたイベントを取得します。
+オーバーレイのイベントは `PollNextOverlayEvent()` を使ったポーリングで検出します。（詳細は [Wiki](https://github.com/ValveSoftware/openvr/wiki/IVROverlay::PollNextOverlayEvent) を参照）
 
-SteamVR のダッシュボードには、コントローラから伸びているレーザポインタで UI を操作する機能があります。
-設定画面のボタンをレーザーポインタでクリックして、操作できるようにしてみます。
+`Update()` 内で `PollNextOverlayEvent()` を使ってダッシュボードオーバーレイで発生したイベントを監視します。。
+指定したオーバーレイでイベントが発生していれば、`PollNextOverlayEvent()` の戻り値が true になり、発生したイベントを一つ取り出すことができます。
+全てのイベントを取り出すと、false が返ってきます。
 
-ダッシュボードのイベント取得には `PollNextOverlayEvent()` を使用します。（[Wiki](https://github.com/ValveSoftware/openvr/wiki/IVROverlay::PollNextOverlayEvent)）
-Update() 内に PollNextOverlayEvent() を追加します。
-
-OpenVR のイベントが発生していれば、PollNextOverlayEvent() を実行した時に true が返ってきて、発生したイベントを一つ取り出すことができます。
-全てのイベントを取り出すと、false が返ってくるようになるので、false が返ってくるまでイベントを取り出して、順次処理していきます。
-
-```cs
-private void Update()
+```diff cs:DashboardOverlay.cs
+void Update()
 {
-    var vrEvent = new VREvent_t();
-    var uncbVREvent = (uint)System.Runtime.InteropServices.Marshal.SizeOf(typeof(VREvent_t));
+    Overlay.SetOverlayRenderTexture(dashboardHandle, renderTexture);
 
-    // 未処理のイベントが残っていれば true
-    while (OpenVR.Overlay.PollNextOverlayEvent(overlayHandle, ref vrEvent, uncbVREvent))
-    {
-      // イベントが発生していれば、一つ取り出して vrEvent にセットする
-    }
-
-    // 全てのイベントを処理し終わった
++   var vrEvent = new VREvent_t();
++   var uncbVREvent = (uint)System.Runtime.InteropServices.Marshal.SizeOf(typeof(VREvent_t));
++
++   // 未処理のイベントが残っていれば true
++   while (OpenVR.Overlay.PollNextOverlayEvent(dashboardHandle, ref vrEvent, uncbVREvent))
++   {
++       // vrEvent に取り出したイベントがセットされる
++   }
++
++   // 全てのイベントを取り出し終わったらループを抜ける
 }
 ```
+
+uncbVREvent は [VREvent_t](https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.VREvent_t.html) 構造体のサイズ（バイト数）です。
+
 
 ## クリックイベントの取得
+レーザーポインタでダッシュボードがクリックされると `EVREventType.VREvent_MouseButtonDown` と `EVREventType.VREvent_MouseButtonUP` が発生します。
+その他のイベントは [EVREventType](https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.EVREventType.html) に定義されています。
 
-レーザーポインタでダッシュボードがクリックされたときは `EVREventType.VREvent_MouseButtonDown` と `EVREventType.VREvent_MouseButtonUP` が発生します。
-その他のイベントも [EVREventType](https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.EVREventType.html) に定義されています。
+試しに `EVREventType.VREvent_MouseButtonDown` と `EVREventType.VREvent_MouseButtonUp` を取得してみます。
 
 ```diff cs
 private void Update()
@@ -903,29 +900,43 @@ private void Update()
     var vrEvent = new VREvent_t();
     var uncbVREvent = (uint)System.Runtime.InteropServices.Marshal.SizeOf(typeof(VREvent_t));
 
-    // 未処理のイベントが残っていれば true
     while (OpenVR.Overlay.PollNextOverlayEvent(overlayHandle, ref vrEvent, uncbVREvent))
     {
-        // イベントが発生していれば、一つ取り出して vrEvent にセットする
-        switch (vrEvent.eventType)
-        {
-            case (uint)EVREventType.VREvent_MouseButtonDown:
-                inputConverter.OnMouseDown(vrEvent.data.mouse);
-                break;
-
-            case (uint)EVREventType.VREvent_MouseButtonUp:
-                var mouse = vrEvent.data.mouse;
-                inputConverter.OnMouseUp(vrEvent.data.mouse);
-                break;
-        }
++       switch (vrEvent.eventType)
++       {
++           case (uint)EVREventType.VREvent_MouseButtonDown:
++               Debug.Log("MouseDown");
++               break;
++
++           case (uint)EVREventType.VREvent_MouseButtonUp:
++               Debug.Log("MouseUp");
++               break;
++       }
     }
-
-    // 全てのイベントを処理し終わった
 }
 ```
+
+`vrEvent.eventType` は uint 型でイベントコードが入っているので、EVREventType を uint にキャストして比較しています。
+プログラムを実行して、ダッシュボードのボタンをクリックすると、"MouseDown" と "MouseUp" がコンソールに出力されます。
+
+![](/images/mouse-up-console.png)
+![](/images/click-dashboard.jpg)
+*オーバーレイのどこをクリックしてもイベントが発生する*
+
+## Overlay Viewer でのイベント確認
+Overlay Viewer を使うとデスクトップ上でオーバーレイのイベントをテストできます。
+
+プログラムの実行後、Overlay Viewer を起動して、左側の一覧から `WatchDashboardKey` のオーバーレイを選択します。
+右下の "Mouse Capture" にチェックを入れた状態で、右側のオーバーレイをクリックすると、イベントが発生して Unity のコンソールにログが表示されます。
+![](/images/overlay-viewer-event.png)
+
+
+HMD を被らずにイベントの動作確認をするときには Overlay Viewer が便利です。
+
 
 ## クリック座標の取り出し
-vrEvent には VREvent_Mouse_T 型でクリックされたマウスの座標が渡されます。
+クリックされた座標をイベントから取得します。
+
 ```diff cs
 private void Update()
 {
@@ -939,11 +950,13 @@ private void Update()
         switch (vrEvent.eventType)
         {
             case (uint)EVREventType.VREvent_MouseButtonDown:
-+               Debug.Log($"ButtonDown: ({vrEvent.data.mouse.x}, {vrEvent.data.mouse.y})")
+-               Debug.Log("MouseDown");            
++               Debug.Log($"MouseDown: ({vrEvent.data.mouse.x}, {vrEvent.data.mouse.y})");
                 break;
 
             case (uint)EVREventType.VREvent_MouseButtonUp:
-+               Debug.Log($"ButtonUp: ({vrEvent.data.mouse.x}, {vrEvent.data.mouse.y})")
+-               Debug.Log("MouseUp");
++               Debug.Log($"MouseUp: ({vrEvent.data.mouse.x}, {vrEvent.data.mouse.y})");
                 break;
         }
     }
@@ -951,6 +964,8 @@ private void Update()
     // 全てのイベントを処理し終わった
 }
 ```
+
+vrEvent には VREvent_Mouse_T 型でクリックされたマウスの座標が渡されます。
 
 ## クリックされた要素を取得する
 クリックされた座標を下に、uGUI のどの要素がクリックされたのかを特定します。
@@ -970,6 +985,9 @@ Graphic Raycaster を使って、カメラから Canvas にレイを飛ばし、
 ```
 
 プログラムを実行してダッシュボードを開き、ボタンをクリックすると、左右どちらの手に時計を表示するか設定できるように鳴っていることを確認します。
+
+## Overlay Viewer でイベントの動作確認
+プログラムを実行して Overlay Viewer を起動してください。
 
 ## コード整理
 コードを綺麗にします
