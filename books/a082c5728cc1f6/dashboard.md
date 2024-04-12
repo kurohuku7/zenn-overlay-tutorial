@@ -965,33 +965,33 @@ vrEvent には VREvent_Mouse_T 型でクリックされたマウスの座標が�
 Mouse Scaling Factor は [SetOverlayMouseScale()](https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.CVROverlay.html#Valve_VR_CVROverlay_SetOverlayMouseScale_System_UInt64_Valve_VR_HmdVector2_t__) で設定します。（詳細は Wiki を参照）
 
 ```diff cs:DashboardOverlay.cs
-    private void Start()
+private void Start()
+{
+    OpenVRUtil.System.InitOpenVR();
+
+    var error = OpenVR.Overlay.CreateDashboardOverlay("WatchDashboardKey", "Watch Setting", ref dashboardHandle, ref thumbnailHandle);
+    if (error != EVROverlayError.None)
     {
-        OpenVRUtil.System.InitOpenVR();
+        throw new Exception("ダッシュボード‐バーレイの作成に失敗しました: " + error);
+    }
 
-        var error = OpenVR.Overlay.CreateDashboardOverlay("WatchDashboardKey", "Watch Setting", ref dashboardHandle, ref thumbnailHandle);
-        if (error != EVROverlayError.None)
-        {
-            throw new Exception("ダッシュボード‐バーレイの作成に失敗しました: " + error);
-        }
+    var filePath = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg");
+    Overlay.SetOverlayFromFile(thumbnailHandle, filePath);
 
-        var filePath = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg");
-        Overlay.SetOverlayFromFile(thumbnailHandle, filePath);
+    Overlay.SetOverlaySize(dashboardHandle, 2.5f);
+    Overlay.flipOverlayVertical(dashboardHandle);
 
-        Overlay.SetOverlaySize(dashboardHandle, 2.5f);
-        Overlay.flipOverlayVertical(dashboardHandle);
-
- +      var mouseScalingFactor = new HmdVector2_t()
- +      {
- +          v0 = renderTexture.width,
- +          v1 = renderTexture.height
- +      };
- +      error = OpenVR.Overlay.SetOverlayMouseScale(dashboardHandle, ref mouseScalingFactor);
- +      if (error != EVROverlayError.None)
- +      {
- +          throw new Exception("Mouse Scaling Factor の設定に失敗しました: " + error);
- +      }
- +  }
++   var mouseScalingFactor = new HmdVector2_t()
++   {
++       v0 = renderTexture.width,
++       v1 = renderTexture.height
++   };
++   error = OpenVR.Overlay.SetOverlayMouseScale(dashboardHandle, ref mouseScalingFactor);
++   if (error != EVROverlayError.None)
++   {
++       throw new Exception("Mouse Scaling Factor の設定に失敗しました: " + error);
++   }
+}
 ```
 
 `mouseScalingFacor` の `v0` が幅、`v1` が高さです。
@@ -1013,8 +1013,19 @@ HMD を被らずにイベントの動作確認をするときには Overlay View
 
 
 ## クリックされた要素を取得する
-クリックされた座標を下に、uGUI のどの要素がクリックされたのかを特定します。
-Graphic Raycaster を使って、カメラから Canvas にレイを飛ばし、レイがぶつかった UI 要素を取得します。
+OpenVR のクリック座標が上下逆になるので反転させます。
+vrEvent.data.mouse.y = dashboardTexture.height - vrEvent.data.mouse.y;
+
+クリックされた座標がわかれば、あとはよく使われる Canvas の [Graphic Raycaster](https://docs.unity3d.com/Packages/com.unity.ugui@1.0/api/UnityEngine.UI.GraphicRaycaster.html) を使ってクリックされた UI 要素を取得できます。
+
+GraphicRaycaster の変数を DashboardOverlay.cs に追加します
+
+インスペクタから GraphicRaycaster に Canvas をドラッグして設定します。
+
+EventSystem の変数を DashboardOverlay.cs につしかします。
+
+インスペクタから EventSystem を設定します。
+
 
 今回は Button のみを使った UI なので、Button クラスを探します。
 ```cs
@@ -1031,8 +1042,6 @@ Graphic Raycaster を使って、カメラから Canvas にレイを飛ばし、
 
 プログラムを実行してダッシュボードを開き、ボタンをクリックすると、左右どちらの手に時計を表示するか設定できるように鳴っていることを確認します。
 
-## Overlay Viewer でイベントの動作確認
-プログラムを実行して Overlay Viewer を起動してください。
 
 ## コード整理
 コードを綺麗にします
