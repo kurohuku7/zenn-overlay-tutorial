@@ -743,33 +743,32 @@ public class WatchOverlay : MonoBehaviour
 
 targetHand に合わせて、それぞれの位置をセットするように変更します。
 ```diff cs:WatchOverlay.cs
-    private void Update()
+private void Update()
+{
++   Vector3 position;
++   Quaternion rotation;
++       
++   if (targetHand == ETrackedControllerRole.LeftHand)
++   {
++       position = new Vector3(leftX, leftY, leftZ);
++       rotation = Quaternion.Euler(leftRotationX, leftRotationY, leftRotationZ);
++   }
++   else
++   {
++       position = new Vector3(rightX, rightY, rightZ);
++       rotation = Quaternion.Euler(rightRotationX, rightRotationY, rightRotationZ);
++   }
++       
+    var controllerIndex = OpenVR.System.GetTrackedDeviceIndexForControllerRole(targetHand);
+    if (controllerIndex != OpenVR.k_unTrackedDeviceIndexInvalid)
     {
-+       Vector3 position;
-+       Quaternion rotation;
-+       
-+       if (targetHand == ETrackedControllerRole.LeftHand)
-+       {
-+           position = new Vector3(leftX, leftY, leftZ);
-+           rotation = Quaternion.Euler(leftRotationX, leftRotationY, leftRotationZ);
-+       }
-+       else
-+       {
-+           position = new Vector3(rightX, rightY, rightZ);
-+           rotation = Quaternion.Euler(rightRotationX, rightRotationY, rightRotationZ);
-+       }
-+       
-        var controllerIndex = OpenVR.System.GetTrackedDeviceIndexForControllerRole(targetHand);
-        if (controllerIndex != OpenVR.k_unTrackedDeviceIndexInvalid)
-        {
--           var position = new Vector3(x, y, z);
--           var rotation = Quaternion.Euler(rotationX, rotationY, rotationZ);
-            Overlay.SetOverlayTransformRelative(overlayHandle, controllerIndex, position, rotation);
-        }
-
-        Overlay.SetOverlayRenderTexture(overlayHandle, renderTexture);
+-       var position = new Vector3(x, y, z);
+-       var rotation = Quaternion.Euler(rotationX, rotationY, rotationZ);
+        Overlay.SetOverlayTransformRelative(overlayHandle, controllerIndex, position, rotation);
     }
 
+    Overlay.SetOverlayRenderTexture(overlayHandle, renderTexture);
+}
 ```
 
 インスペクタで各座標と角度を入力します。
@@ -923,21 +922,10 @@ private void Update()
 ![](/images/click-dashboard.jpg)
 *オーバーレイのどこをクリックしてもイベントが発生する*
 
-## Overlay Viewer でのイベント確認
-Overlay Viewer を使うとデスクトップ上でオーバーレイのイベントをテストできます。
-
-プログラムの実行後、Overlay Viewer を起動して、左側の一覧から `WatchDashboardKey` のオーバーレイを選択します。
-右下の "Mouse Capture" にチェックを入れた状態で、右側のオーバーレイをクリックすると、イベントが発生して Unity のコンソールにログが表示されます。
-![](/images/overlay-viewer-event.png)
-
-
-HMD を被らずにイベントの動作確認をするときには Overlay Viewer が便利です。
-
-
 ## クリック座標の取り出し
 クリックされた座標をイベントから取得します。
 
-```diff cs
+```diff cs:DashboardOverlay.cs
 private void Update()
 {
     var vrEvent = new VREvent_t();
@@ -966,6 +954,63 @@ private void Update()
 ```
 
 vrEvent には VREvent_Mouse_T 型でクリックされたマウスの座標が渡されます。
+座標はオーバーレイの UV 座標で返され、左上が (0, 0)、右下が (1, 1) となります。
+
+プログラムを実行して、ダッシュボード開き、レーザポインタでオーバーレイをクリックしてください。
+クリックされた座標がコンソールに表示されるはずです。
+![](/images/click-uv-position.png)
+
+## Mouse Scaling Factor の適用
+受け取ったマウス座標はデフォルトで UV 座標になっていますが、Mouse Scaling Factor を設定すると、実際の UI の座標（ピクセル数）で受け取ることができます。
+Mouse Scaling Factor は [SetOverlayMouseScale()](https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.CVROverlay.html#Valve_VR_CVROverlay_SetOverlayMouseScale_System_UInt64_Valve_VR_HmdVector2_t__) で設定します。（詳細は Wiki を参照）
+
+```diff cs:DashboardOverlay.cs
+    private void Start()
+    {
+        OpenVRUtil.System.InitOpenVR();
+
+        var error = OpenVR.Overlay.CreateDashboardOverlay("WatchDashboardKey", "Watch Setting", ref dashboardHandle, ref thumbnailHandle);
+        if (error != EVROverlayError.None)
+        {
+            throw new Exception("ダッシュボード‐バーレイの作成に失敗しました: " + error);
+        }
+
+        var filePath = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg");
+        Overlay.SetOverlayFromFile(thumbnailHandle, filePath);
+
+        Overlay.SetOverlaySize(dashboardHandle, 2.5f);
+        Overlay.flipOverlayVertical(dashboardHandle);
+
+ +      var mouseScalingFactor = new HmdVector2_t()
+ +      {
+ +          v0 = renderTexture.width,
+ +          v1 = renderTexture.height
+ +      };
+ +      error = OpenVR.Overlay.SetOverlayMouseScale(dashboardHandle, ref mouseScalingFactor);
+ +      if (error != EVROverlayError.None)
+ +      {
+ +          throw new Exception("Mouse Scaling Factor の設定に失敗しました: " + error);
+ +      }
+ +  }
+```
+
+`mouseScalingFacor` の `v0` が幅、`v1` が高さです。
+
+プログラムを実行して、ダッシュボードをクリックしてください。
+クリックされた座標が (0, 0) ～ (1024, 768) にスケーリングされた座標で取得できるようになります。
+![](/images/scaled-mouse-position.png)
+
+
+## Overlay Viewer でのイベント確認
+ちなみに Overlay Viewer でもマウスイベントを発行できます。
+
+プログラムの実行後、Overlay Viewer を起動して、左側の一覧から `WatchDashboardKey` を選択します。
+右下の "Mouse Capture" にチェックを入れた状態で、右側のオーバーレイをクリックすると、イベントが発生して Unity のコンソールにログが表示されます。
+![](/images/overlay-viewer-event.png)
+
+
+HMD を被らずにイベントの動作確認をするときには Overlay Viewer が便利です。
+
 
 ## クリックされた要素を取得する
 クリックされた座標を下に、uGUI のどの要素がクリックされたのかを特定します。
