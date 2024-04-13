@@ -413,7 +413,7 @@ Text (TMP) に Watch.cs を追加します。
 
 ### オーバーレイの上下反転
 TODO: 反転を Graphics.Blit でやる
-`flipOverlayVertical()` として関数に分けておきます。
+`FlipOverlayVertical()` として関数に分けておきます。
 ```diff cs:WatchOverlay.cs
 private void Start()
 {
@@ -432,14 +432,14 @@ private void Start()
 -   {
 -       throw new Exception("テクスチャの反転に失敗しました: " + error);
 -   }
-+   flipOverlayVertical(overlayHandle);    
++   FlipOverlayVertical(overlayHandle);    
     SetOverlaySize(overlayHandle, size);
     ShowOverlay(overlayHandle);
 }
 
 ～省略～
 
-+ private void flipOverlayVertical(ulong handle)
++ private void FlipOverlayVertical(ulong handle)
 + {
 +    var bounds = new VRTextureBounds_t
 +    {
@@ -532,7 +532,7 @@ public class WatchOverlay : MonoBehaviour
         InitOpenVR();
         overlayHandle = CreateOverlay("WatchOverlayKey", "WatchOverlay");
 
-        flipOverlayVertical(overlayHandle);
+        FlipOverlayVertical(overlayHandle);
         SetOverlaySize(overlayHandle, size);
         ShowOverlay(overlayHandle);
     }
@@ -645,7 +645,7 @@ public class WatchOverlay : MonoBehaviour
         }
     }
 
-    private void flipOverlayVertical(ulong handle)
+    private void FlipOverlayVertical(ulong handle)
     {
         var bounds = new VRTextureBounds_t
         {

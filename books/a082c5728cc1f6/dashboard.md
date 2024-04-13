@@ -205,7 +205,7 @@ namespace OpenVRUtil
 - `SetOverlayFromFile()`
 - `SetOverlaySize()`
 - `SetOverlayTransformRelative()`
-- `flipOverlayVertical()`
+- `FlipOverlayVertical()`
 - `SetOverlayRenderTexture()`
 
 ```diff cs:WatchOverlay.cs
@@ -335,15 +335,15 @@ public class WatchOverlay : MonoBehaviour
     private void Start()
     {
 -       InitOpenVR();
-+       OpenVRUtil.System.InitOpenVR();
 -       overlayHandle = CreateOverlay("WatchOverlayKey", "WatchOverlay");
++       OpenVRUtil.System.InitOpenVR();
 +       overlayHandle = Overlay.CreateOverlay("WatchOverlayKey", "WatchOverlay");
 
--       flipOverlayVertical(overlayHandle);
-+       Overlay.flipOverlayVertical(overlayHandle);
+-       FlipOverlayVertical(overlayHandle);
 -       SetOverlaySize(overlayHandle, size);
-+       Overlay.SetOverlaySize(overlayHandle, size);
 -       ShowOverlay(overlayHandle);
++       Overlay.FlipOverlayVertical(overlayHandle);
++       Overlay.SetOverlaySize(overlayHandle, size);
 +       Overlay.ShowOverlay(overlayHandle);
     }
     
@@ -580,7 +580,7 @@ Hierarchy で `DashboardOverlay` をクリックして、`Camera` 変数に `Das
 
 ### レンダーテクスチャの関連付け
 `DashboardOverlay.cs` でレンダーテクスチャの変数を作成して、カメラの映像が書き込まれるようにします。
-また、`flipOverlayVertical()` でテクスチャの上下を反転させておきます。
+また、`FlipOverlayVertical()` でテクスチャの上下を反転させておきます。
 `SetOverlaySize()` でオーバーレイのサイズを 2.5 m に設定します。
 
 ```diff cs:DashboardOverlay.cs
@@ -605,7 +605,7 @@ public class DashboardOverlay : MonoBehaviour
         Overlay.SetOverlayFromFile(thumbnailHandle, filePath);
 
 +       Overlay.SetOverlaySize(dashboardHandle, 2.5f);        
-+       Overlay.flipOverlayVertical(dashboardHandle);
++       Overlay.FlipOverlayVertical(dashboardHandle);
     }
 
     ～省略～
@@ -641,7 +641,7 @@ public class DashboardOverlay : MonoBehaviour
         camera.targetTexture = renderTexture;
 
         Overlay.SetOverlaySize(dashboardHandle, 2.5f);
-        Overlay.flipOverlayVertical(dashboardHandle);
+        Overlay.FlipOverlayVertical(dashboardHandle);
     }
 
 +   void Update()
@@ -978,7 +978,7 @@ private void Start()
     Overlay.SetOverlayFromFile(thumbnailHandle, filePath);
 
     Overlay.SetOverlaySize(dashboardHandle, 2.5f);
-    Overlay.flipOverlayVertical(dashboardHandle);
+    Overlay.FlipOverlayVertical(dashboardHandle);
 
 +   var mouseScalingFactor = new HmdVector2_t()
 +   {
@@ -1238,4 +1238,572 @@ void Update()
 
 
 ## コード整理
-コードを綺麗にします
+### ダッシュボードオーバーレイの作成
+ダッシュボードオーバーレイの作成を `CreateDashboardOverlay()` として関数に分けておきます。
+戻り値は `dashboardHandle` と `thumbnailHandle` の 2 つ必要なので、タプルで返すようにしておきます。
+
+```diff cs:OpenVRUtil.cs
+～省略～
+
+public static void DestroyOverlay(ulong handle)
+{
+    if (handle != OpenVR.k_ulOverlayHandleInvalid)
+    {
+        OpenVR.Overlay.DestroyOverlay(handle);
+    }
+}
+
++ public static (ulong, ulong) CreateDashboardOverlay(string key, string name)
++ {
++     ulong dashboardHandle = 0;
++     ulong thumbnailHandle = 0;
++     var error = OpenVR.Overlay.CreateDashboardOverlay(key, name, ref dashboardHandle, ref thumbnailHandle);
++     if (error != EVROverlayError.None)
++     {
++         throw new Exception("ダッシュボード‐バーレイの作成に失敗しました: " + error);
++     }
++ 
++     return (dashboardHandle, thumbnailHandle);
++ }
+
+public static void ShowOverlay(ulong handle)
+{
+    var error = OpenVR.Overlay.ShowOverlay(handle);
+    if (error != EVROverlayError.None)
+    {
+        throw new Exception("オーバーレイの表示に失敗しました: " + error);
+    }
+}
+
+～省略～
+```
+
+```diff cs:DashboardOverlay
+private void Start()
+{
+    OpenVRUtil.System.InitOpenVR();
+
+-   var error = OpenVR.Overlay.CreateDashboardOverlay("WatchDashboardKey", "Watch Setting", ref dashboardHandle, ref thumbnailHandle);
+-   if (error != EVROverlayError.None)
+-   {
+-       throw new Exception("ダッシュボード‐バーレイの作成に失敗しました: " + error);
+-   }
++   (dashboardHandle, thumbnailHandle) = Overlay.CreateDashboardOverlay("WatchDashboardKey", "Watch Setting");
+
+    var filePath = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg");
+    Overlay.SetOverlayFromFile(thumbnailHandle, filePath);
+
+    Overlay.SetOverlaySize(dashboardHandle, 2.5f);
+    Overlay.FlipOverlayVertical(dashboardHandle);
+
+    var pvecMouseScale = new HmdVector2_t()
+    {
+        v0 = renderTexture.width,
+        v1 = renderTexture.height
+    };
+    error = OpenVR.Overlay.SetOverlayMouseScale(dashboardHandle, ref pvecMouseScale);
+    if (error != EVROverlayError.None)
+    {
+        throw new Exception("マウススケールの設定に失敗しました: " + error);
+    }
+}
+```
+
+### Mouse Scaling Factor の設定
+Mouse Scaling Factor の設定を `SetOverlayMouseScale()` として関数に分けておきます。
+これはマウスイベントの座標が 0 ~ 1 で返ってくるところを、実際の UI のピクセル数に合わせた座標で返すための処理です。
+
+```diff cs:OpenVRUtil.cs
+～省略～
+
+public static void SetOverlayRenderTexture(ulong handle, RenderTexture renderTexture)
+{
+    if (!renderTexture.IsCreated())
+    {
+        return;
+    }
+    
+    var nativeTexturePtr = renderTexture.GetNativeTexturePtr();
+    var texture = new Texture_t
+    {
+        eColorSpace = EColorSpace.Auto,
+        eType = ETextureType.DirectX,
+        handle = nativeTexturePtr
+    };
+    var error = OpenVR.Overlay.SetOverlayTexture(handle, ref texture);
+    if (error != EVROverlayError.None)
+    {
+        throw new Exception("テクスチャの描画に失敗しました: " + error);
+    }
+}
+
++ public static void SetOverlayMouseScale(ulong handle, int x, int y)
++ {
++     var pvecMouseScale = new HmdVector2_t()
++     {
++         v0 = x,
++         v1 = y
++     };
++     var error = OpenVR.Overlay.SetOverlayMouseScale(handle, ref pvecMouseScale);
++     if (error != EVROverlayError.None)
++     {
++         throw new Exception("マウススケールの設定に失敗しました: " + error);
++     }
++ }
+
+～省略～
+```
+```diff cs:DashboardOverlay.cs
+private void Start()
+{
+    OpenVRUtil.System.InitOpenVR();
+
+    (dashboardHandle, thumbnailHandle) = Overlay.CreateDashboardOverlay("WatchDashboardKey", "Watch Setting");
+
+    var filePath = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg");
+    Overlay.SetOverlayFromFile(thumbnailHandle, filePath);
+
+    Overlay.SetOverlaySize(dashboardHandle, 2.5f);
+    Overlay.FlipOverlayVertical(dashboardHandle);
+
+-   var pvecMouseScale = new HmdVector2_t()
+-   {
+-       v0 = renderTexture.width,
+-       v1 = renderTexture.height
+-   };
+-   var error = OpenVR.Overlay.SetOverlayMouseScale(dashboardHandle, ref pvecMouseScale);
+-   if (error != EVROverlayError.None)
+-   {
+-       throw new Exception("マウススケールの設定に失敗しました: " + error);
+-   }
++   Overlay.SetoverlayMouseScale(dashboardHandle, renderTexture.width, renderTexture.height);
+}
+```
+
+### イベントの処理
+ダッシュボードオーバーレイのイベント処理を `ProcessOverlayEvents()` として関数に分けておきます。
+
+```diff cs:DashboardOverlay.cs
+void Update()
+{
+    Overlay.SetOverlayRenderTexture(dashboardHandle, renderTexture);
+-
+-   var vrEvent = new VREvent_t();
+-   var uncbVREvent = (uint)System.Runtime.InteropServices.Marshal.SizeOf(typeof(VREvent_t));
+-   while (OpenVR.Overlay.PollNextOverlayEvent(dashboardHandle, ref vrEvent, uncbVREvent))
+-   {
+-       switch (vrEvent.eventType)
+-       {
+-           case (uint)EVREventType.VREvent_MouseButtonUp:
+-               vrEvent.data.mouse.y = renderTexture.height - vrEvent.data.mouse.y;
+-               var button = GetButtonByPosition(vrEvent.data.mouse.x, vrEvent.data.mouse.y);
+-               if (button != null)
+-               {
+-                   button.onClick.Invoke();
+-               }
+-               break;
+-       }
+-  }
++  ProcessOverlayEvents();
+}
+
+private void OnApplicationQuit()
+{
+    Overlay.DestroyOverlay(dashboardHandle);
+    Overlay.DestroyOverlay(thumbnailHandle);
+}
+
+private void OnDestroy()
+{
+    OpenVRUtil.System.ShutdownOpenVR();
+}
+
+private void ProcessOverlayEvents()
+{
+    var vrEvent = new VREvent_t();
+    var uncbVREvent = (uint)System.Runtime.InteropServices.Marshal.SizeOf(typeof(VREvent_t));
+    while (OpenVR.Overlay.PollNextOverlayEvent(dashboardHandle, ref vrEvent, uncbVREvent))
+    {
+        switch (vrEvent.eventType)
+        {
+            case (uint)EVREventType.VREvent_MouseButtonUp:
+                vrEvent.data.mouse.y = renderTexture.height - vrEvent.data.mouse.y;
+                var button = GetButtonByPosition(vrEvent.data.mouse.x, vrEvent.data.mouse.y);
+                if (button != null)
+                {
+                    button.onClick.Invoke();
+                }
+                break;
+        }
+    }
+}
+
+private Button GetButtonByPosition(float x, float y)
+{
+    var raycastResultList = new List<RaycastResult>();
+    var pointerEventData = new PointerEventData(eventSystem);
+    pointerEventData.position = new Vector2(x, y);
+    
+    graphicRaycaster.Raycast(pointerEventData, raycastResultList);
+    var raycastResult = raycastResultList.Find(element => element.gameObject.GetComponent<Button>());
+    if (raycastResult.gameObject == null)
+    {
+        return null;
+    }
+    return raycastResult.gameObject.GetComponent<Button>();
+}
+```
+
+### 最終的なコード
+最終的なコードは下記のとおりです。
+
+```cs:WatchOverlay.cs
+using System;
+using UnityEngine;
+using Valve.VR;
+using OpenVRUtil;
+
+public class WatchOverlay : MonoBehaviour
+{
+    public Camera camera;
+    public RenderTexture renderTexture;
+    public ETrackedControllerRole targetHand = ETrackedControllerRole.RightHand;
+
+    private ulong overlayHandle = OpenVR.k_ulOverlayHandleInvalid;
+
+    [Range(0, 0.5f)] public float size;
+
+    [Range(-0.5f, 0.5f)] public float leftX;
+    [Range(-0.5f, 0.5f)] public float leftY;
+    [Range(-0.5f, 0.5f)] public float leftZ;
+    [Range(0, 360)] public int leftRotationX;
+    [Range(0, 360)] public int leftRotationY;
+    [Range(0, 360)] public int leftRotationZ;
+
+    [Range(-0.5f, 0.5f)] public float rightX;
+    [Range(-0.5f, 0.5f)] public float rightY;
+    [Range(-0.5f, 0.5f)] public float rightZ;
+    [Range(0, 360)] public int rightRotationX;
+    [Range(0, 360)] public int rightRotationY;
+    [Range(0, 360)] public int rightRotationZ;
+
+    private void Start()
+    {
+        OpenVRUtil.System.InitOpenVR();
+        overlayHandle = Overlay.CreateOverlay("WatchOverlayKey", "WatchOverlay");
+        
+        Overlay.FlipOverlayVertical(overlayHandle);
+        Overlay.SetOverlaySize(overlayHandle, size);
+        Overlay.ShowOverlay(overlayHandle);
+    }
+
+    private void Update()
+    {
+        Vector3 position;
+        Quaternion rotation;
+
+        if (targetHand == ETrackedControllerRole.LeftHand)
+        {
+            position = new Vector3(leftX, leftY, leftZ);
+            rotation = Quaternion.Euler(leftRotationX, leftRotationY, leftRotationZ);
+        }
+        else
+        {
+            position = new Vector3(rightX, rightY, rightZ);
+            rotation = Quaternion.Euler(rightRotationX, rightRotationY, rightRotationZ);
+        }
+        
+        var controllerIndex = OpenVR.System.GetTrackedDeviceIndexForControllerRole(targetHand);
+        if (controllerIndex != OpenVR.k_unTrackedDeviceIndexInvalid)
+        {
+            Overlay.SetOverlayTransformRelative(overlayHandle, controllerIndex, position, rotation);
+        }
+
+        Overlay.SetOverlayRenderTexture(overlayHandle, renderTexture);
+    }
+
+    private void OnApplicationQuit()
+    {
+        Overlay.DestroyOverlay(overlayHandle);
+    }
+    
+    private void OnDestroy()
+    {
+        OpenVRUtil.System.ShutdownOpenVR();
+    }
+}
+```
+
+```cs:DashboardOverlay.cs
+using UnityEngine;
+using Valve.VR;
+using System;
+using OpenVRUtil;
+using UnityEngine.UI;
+using UnityEngine.EventSystems;
+using System.Collections.Generic;
+
+public class DashboardOverlay : MonoBehaviour
+{
+    public Camera camera;
+    public RenderTexture renderTexture;
+    public GraphicRaycaster graphicRaycaster;
+    public EventSystem eventSystem;
+    
+    private ulong dashboardHandle = OpenVR.k_ulOverlayHandleInvalid;
+    private ulong thumbnailHandle = OpenVR.k_ulOverlayHandleInvalid;
+
+    private void Start()
+    {
+        OpenVRUtil.System.InitOpenVR();
+        (dashboardHandle, thumbnailHandle) = Overlay.CreateDashboardOverlay("WatchDashboardKey", "Watch Setting");
+
+        var filePath = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg");
+        Overlay.SetOverlayFromFile(thumbnailHandle, filePath);
+
+        Overlay.SetOverlaySize(dashboardHandle, 2.5f);
+        Overlay.FlipOverlayVertical(dashboardHandle);
+        Overlay.SetOverlayMouseScale(dashboardHandle, renderTexture.width, renderTexture.height);
+    }
+
+    void Update()
+    {
+        Overlay.SetOverlayRenderTexture(dashboardHandle, renderTexture);
+        ProcessOverlayEvents();
+    }
+
+    private void OnApplicationQuit()
+    {
+        Overlay.DestroyOverlay(dashboardHandle);
+        Overlay.DestroyOverlay(thumbnailHandle);
+    }
+
+    private void OnDestroy()
+    {
+        OpenVRUtil.System.ShutdownOpenVR();
+    }
+
+    private void ProcessOverlayEvents()
+    {
+        var vrEvent = new VREvent_t();
+        var uncbVREvent = (uint)System.Runtime.InteropServices.Marshal.SizeOf(typeof(VREvent_t));
+        while (OpenVR.Overlay.PollNextOverlayEvent(dashboardHandle, ref vrEvent, uncbVREvent))
+        {
+            switch (vrEvent.eventType)
+            {
+                case (uint)EVREventType.VREvent_MouseButtonUp:
+                    vrEvent.data.mouse.y = renderTexture.height - vrEvent.data.mouse.y;
+                    var button = GetButtonByPosition(vrEvent.data.mouse.x, vrEvent.data.mouse.y);
+                    if (button != null)
+                    {
+                        button.onClick.Invoke();
+                    }
+                    break;
+            }
+        }
+    }
+    
+    private Button GetButtonByPosition(float x, float y)
+    {
+        var raycastResultList = new List<RaycastResult>();
+        var pointerEventData = new PointerEventData(eventSystem);
+        pointerEventData.position = new Vector2(x, y);
+        
+        graphicRaycaster.Raycast(pointerEventData, raycastResultList);
+        var raycastResult = raycastResultList.Find(element => element.gameObject.GetComponent<Button>());
+        if (raycastResult.gameObject == null)
+        {
+            return null;
+        }
+        return raycastResult.gameObject.GetComponent<Button>();
+    }
+}
+```
+
+```cs:OpenVRUtil.cs
+using UnityEngine;
+using Valve.VR;
+using System;
+
+namespace OpenVRUtil
+{
+    public static class System
+    {
+        public static void InitOpenVR()
+        {
+            if (OpenVR.System != null) return;
+
+            var initError = EVRInitError.None;
+            OpenVR.Init(ref initError, EVRApplicationType.VRApplication_Overlay);
+            if (initError != EVRInitError.None)
+            {
+                throw new Exception("OpenVRの初期化に失敗しました: " + initError);
+            }
+        }
+
+        public static void ShutdownOpenVR()
+        {
+            if (OpenVR.System != null)
+            {
+                OpenVR.Shutdown();
+            }
+        }
+    }
+
+    public static class Overlay
+    {
+        public static ulong CreateOverlay(string key, string name)
+        {
+            var handle = OpenVR.k_ulOverlayHandleInvalid;
+            var error = OpenVR.Overlay.CreateOverlay(key, name, ref handle);
+            if (error != EVROverlayError.None)
+            {
+                throw new Exception("オーバーレイの作成に失敗しました: " + error);
+            }
+
+            return handle;
+        }
+
+        public static void DestroyOverlay(ulong handle)
+        {
+            if (handle != OpenVR.k_ulOverlayHandleInvalid)
+            {
+                OpenVR.Overlay.DestroyOverlay(handle);
+            }
+        }
+
+        public static (ulong, ulong) CreateDashboardOverlay(string key, string name)
+        {
+            ulong dashboardHandle = 0;
+            ulong thumbnailHandle = 0;
+            var error = OpenVR.Overlay.CreateDashboardOverlay(key, name, ref dashboardHandle, ref thumbnailHandle);
+            if (error != EVROverlayError.None)
+            {
+                throw new Exception("ダッシュボード‐バーレイの作成に失敗しました: " + error);
+            }
+
+            return (dashboardHandle, thumbnailHandle);
+        }
+
+        public static void ShowOverlay(ulong handle)
+        {
+            var error = OpenVR.Overlay.ShowOverlay(handle);
+            if (error != EVROverlayError.None)
+            {
+                throw new Exception("オーバーレイの表示に失敗しました: " + error);
+            }
+        }
+
+        public static void SetOverlayFromFile(ulong handle, string path)
+        {
+            var error = OpenVR.Overlay.SetOverlayFromFile(handle, path);
+            if (error != EVROverlayError.None)
+            {
+                throw new Exception("画像ファイルの描画に失敗しました: " + error);
+            }
+        }
+
+        public static void SetOverlaySize(ulong handle, float size)
+        {
+            var error = OpenVR.Overlay.SetOverlayWidthInMeters(handle, size);
+            if (error != EVROverlayError.None)
+            {
+                throw new Exception("オーバーレイのサイズ設定に失敗しました: " + error);
+            }
+        }
+
+        public static void SetOverlayTransformAbsolute(ulong handle, Vector3 position, Quaternion rotation)
+        {
+            var rigidTransform = new SteamVR_Utils.RigidTransform(position, rotation);
+            var matrix = rigidTransform.ToHmdMatrix34();
+            var error = OpenVR.Overlay.SetOverlayTransformAbsolute(handle, ETrackingUniverseOrigin.TrackingUniverseStanding, ref matrix);
+            if (error != EVROverlayError.None)
+            {
+                throw new Exception("オーバーレイの位置設定に失敗しました: " + error);
+            }
+        }
+
+        public static void SetOverlayTransformRelative(ulong handle, uint deviceIndex, Vector3 position, Quaternion rotation)
+        {
+            var rigidTransform = new SteamVR_Utils.RigidTransform(position, rotation);
+            var matrix = rigidTransform.ToHmdMatrix34();
+            var error = OpenVR.Overlay.SetOverlayTransformTrackedDeviceRelative(handle, deviceIndex, ref matrix);
+            if (error != EVROverlayError.None)
+            {
+                throw new Exception("オーバーレイの位置設定に失敗しました: " + error);
+            }
+        }
+
+        public static void FlipOverlayVertical(ulong handle)
+        {
+            var bounds = new VRTextureBounds_t
+            {
+                uMin = 0,
+                uMax = 1,
+                vMin = 1,
+                vMax = 0
+            };
+            var error = OpenVR.Overlay.SetOverlayTextureBounds(handle, ref bounds);
+            if (error != EVROverlayError.None)
+            {
+                throw new Exception("テクスチャの反転に失敗しました: " + error);
+            }
+        }
+
+        public static void SetOverlayRenderTexture(ulong handle, RenderTexture renderTexture)
+        {
+            if (!renderTexture.IsCreated())
+            {
+                return;
+            }
+            
+            var nativeTexturePtr = renderTexture.GetNativeTexturePtr();
+            var texture = new Texture_t
+            {
+                eColorSpace = EColorSpace.Auto,
+                eType = ETextureType.DirectX,
+                handle = nativeTexturePtr
+            };
+            var error = OpenVR.Overlay.SetOverlayTexture(handle, ref texture);
+            if (error != EVROverlayError.None)
+            {
+                throw new Exception("テクスチャの描画に失敗しました: " + error);
+            }
+        }
+
+        public static void SetOverlayMouseScale(ulong handle, int x, int y)
+        {
+            var pvecMouseScale = new HmdVector2_t()
+            {
+                v0 = x,
+                v1 = y
+            };
+            var error = OpenVR.Overlay.SetOverlayMouseScale(handle, ref pvecMouseScale);
+            if (error != EVROverlayError.None)
+            {
+                throw new Exception("マウススケールの設定に失敗しました: " + error);
+            }
+        }
+    }
+}
+```
+
+```cs:WatchSettingController.cs
+using UnityEngine;
+using Valve.VR;
+
+public class WatchSettingController : MonoBehaviour
+{
+    [SerializeField] private WatchOverlay watchOverlay;
+    
+    public void OnLeftHandButtonClick()
+    {
+        watchOverlay.targetHand = ETrackedControllerRole.LeftHand;
+    }
+
+    public void OnRightHandButtonClick()
+    {
+        watchOverlay.targetHand = ETrackedControllerRole.RightHand;
+    }
+}
+```
