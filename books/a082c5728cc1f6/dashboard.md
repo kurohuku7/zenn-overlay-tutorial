@@ -1455,4 +1455,4 @@ private Button GetButtonByPosition(float x, float y)
 ```
 
 ### 最終的なコード
-1 ページあたりの最大文字数の関係で、最終的なコードは次のページに載せます。
+文字数の関係で次のページに表記しています。
