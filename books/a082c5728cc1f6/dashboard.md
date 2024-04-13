@@ -5,8 +5,7 @@ free: false
 
 Steam のダッシュボードに設定画面を作ります。
 設定画面で左右のコントローラどちらに時計を表示するか選べるようにします。
-
-![](/images/dashboard-preview.jpg)
+![](/images/switch-hand.gif)
 
 ## DashboardOverlay の作成
 `Scripts/DashboardOverlay.cs` を新規作成します。
@@ -889,7 +888,7 @@ uncbVREvent は [VREvent_t](https://valvesoftware.github.io/steamvr_unity_plugin
 
 ## クリックイベントの取得
 レーザーポインタでダッシュボードがクリックされると `EVREventType.VREvent_MouseButtonDown` と `EVREventType.VREvent_MouseButtonUP` が発生します。
-その他のイベントは [EVREventType](https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.EVREventType.html) に定義されています。
+その他のイベントは [EVREventType](https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.EVREventType.html) に定義されています。（詳細は [Wiki](https://github.com/ValveSoftware/openvr/wiki/VREvent_t) を参照）
 
 試しに `EVREventType.VREvent_MouseButtonDown` と `EVREventType.VREvent_MouseButtonUp` を取得してみます。
 
@@ -1011,36 +1010,231 @@ private void Start()
 
 HMD を被らずにイベントの動作確認をするときには Overlay Viewer が便利です。
 
-
 ## クリックされた要素を取得する
-OpenVR のクリック座標が上下逆になるので反転させます。
-vrEvent.data.mouse.y = dashboardTexture.height - vrEvent.data.mouse.y;
 
-クリックされた座標がわかれば、あとはよく使われる Canvas の [Graphic Raycaster](https://docs.unity3d.com/Packages/com.unity.ugui@1.0/api/UnityEngine.UI.GraphicRaycaster.html) を使ってクリックされた UI 要素を取得できます。
+マウスイベントの座標から、どのボタンがクリックされたのかを判定します。
+Canvas の [Graphic Raycaster](https://docs.unity3d.com/Packages/com.unity.ugui@1.0/api/UnityEngine.UI.GraphicRaycaster.html) を使って、カメラからクリック座標へレイを飛ばし、レイがぶつかった要素を取得します。
 
-GraphicRaycaster の変数を DashboardOverlay.cs に追加します
+### Graphic Raycaster を取得
+GraphicRaycaster の変数を追加します。
+```diff cs:DashboardOverlay.cs
+using UnityEngine;
+using Valve.VR;
+using System;
+using OpenVRUtil;
++ using UnityEngine.UI;
 
+public class DashboardOverlay : MonoBehaviour
+{
+    public Camera camera;
+    public RenderTexture renderTexture;
++   public GraphicRaycaster graphicRaycaster;
+    private ulong dashboardHandle = OpenVR.k_ulOverlayHandleInvalid;
+    private ulong thumbnailHandle = OpenVR.k_ulOverlayHandleInvalid;
+
+    ～省略～
+```
+
+Hierarchy で `Dashboard/Canvas` を `DashboardOverlay` の `GraphicRaycaster` へドラッグします。
 インスペクタから GraphicRaycaster に Canvas をドラッグして設定します。
+![](/images/drag-graphic-raycaster.png)
 
-EventSystem の変数を DashboardOverlay.cs につしかします。
+### 検出用のメソッドを作成
+```diff cs:DashboardOverlay.cs
+private void OnDestroy()
+{
+    OpenVRUtil.System.ShutdownOpenVR();
+}
 
-インスペクタから EventSystem を設定します。
++ private Button GetButtonByPosition(float x, float y)
++ {
++    //  から Button を探して返す
++ }
 
-
-今回は Button のみを使った UI なので、Button クラスを探します。
-```cs
-// GraphicRaycaster で要素を取得する処理
+～省略～
 ```
 
-## ボタンをクリックする処理
-もしダッシュボードのクリック座標に Button があれば、その Button の OnClick() イベントを実行します。
-左手と右手の切り替えボタンの OnClick() は既に実装済みなので、OnClick() を呼び出せば使用するコントローラの切り替えが動きます。
+引数はマウスがクリックされた座標で、`vrEvent.data.mouse.x` と `vrEvent.data.mouse.y` をを渡します。
+戻り値は、今回は Button のみを使った UI なので Button にします。
 
-```cs
-// 対応するボタンの OnClick() を呼び出す
+### EventSystem と PointerEventData の準備
+Graphic Raycaster に渡すための EventSystem と PointerEventData を準備します。
+```diff cs:DashboardOverlay.cs
+using UnityEngine;
+using Valve.VR;
+using System;
+using OpenVRUtil;
+using UnityEngine.UI;
++ using UnityEngine.EventSystems;
+
+public class DashboardOverlay : MonoBehaviour
+{
+    public Camera camera;
+    public RenderTexture renderTexture;
+    public GraphicRaycaster graphicRaycaster;
++   public EventSystem eventSystem;
+    
+    private ulong dashboardHandle = OpenVR.k_ulOverlayHandleInvalid;
+    private ulong thumbnailHandle = OpenVR.k_ulOverlayHandleInvalid;
+
+    ～省略～
+
+    private Button GetButtonByPosition(float x, float y)
+    {
++       var pointerEventData = new PointerEventData(eventSystem);
++       pointerEventData.position = new Vector2(x, y);
+    }
 ```
 
-プログラムを実行してダッシュボードを開き、ボタンをクリックすると、左右どちらの手に時計を表示するか設定できるように鳴っていることを確認します。
+Hierarchy で `EventSystem` を `DashboardOverlay` の `EventSystem` にドラッグします。
+![](/images/drag-event-system.png)
+
+
+### GraphicRaycaster で Button を取得する
+[GraphicRaycaster.Raycast()](https://docs.unity3d.com/Packages/com.unity.ugui@1.0/api/UnityEngine.UI.GraphicRaycaster.html#UnityEngine_UI_GraphicRaycaster_Raycast_UnityEngine_EventSystems_PointerEventData_System_Collections_Generic_List_UnityEngine_EventSystems_RaycastResult__) で、クリック座標の要素を取得し、Button があれば返すようにします。
+
+
+```diff cs:DashboardOverlay.cs
+using UnityEngine;
+using Valve.VR;
+using System;
+using OpenVRUtil;
+using UnityEngine.UI;
+using UnityEngine.EventSystems;
++ using System.Collections.Generic;
+
+public class DashboardOverlay : MonoBehaviour
+{
+    public Camera camera;
+    public RenderTexture renderTexture;
+    public GraphicRaycaster graphicRaycaster;
+    public EventSystem eventSystem;
+
+    private Button GetButtonByPosition(float x, float y)
+    {
+        var pointerEventData = new PointerEventData(eventSystem);
+        pointerEventData.position = new Vector2(x, y);
+
++       // マウス座標にある要素を取得
++       var resultList = new List<RaycastResult>();
++       graphicRaycaster.Raycast(pointerEventData, raycastResultList);
++
++       // 取得した要素から Button コンポーネントを持つゲームオブジェクトを返す
++       var raycastResult = raycastResultList.Find(element => element.gameObject.GetComponent<Button>());
++       if (raycastResult.gameObject == null)
++       {
++           // Button がなければ null を返す
++           return null;
++       }
++
++       // 見つかった Button を返す
++       return raycastResult.gameObject.GetComponent<Button>();
+    }
+```
+
+### 検出処理の呼び出し
+今回はシンプルに MouseDown されたボタンをクリックするようにします。
+MouseUp のイベント処理は不要なので削除します。
+MouseDown のイベント処理にクリックされたボタンの取得を追加します。
+```diff cs:DashboardOverlay.cs
+void Update()
+{
+    Overlay.SetOverlayRenderTexture(dashboardHandle, renderTexture);
+
+    var vrEvent = new VREvent_t();
+    var uncbVREvent = (uint)System.Runtime.InteropServices.Marshal.SizeOf(typeof(VREvent_t));
+    while (OpenVR.Overlay.PollNextOverlayEvent(dashboardHandle, ref vrEvent, uncbVREvent))
+    {
+        switch (vrEvent.eventType)
+        {
+-           case (uint)EVREventType.VREvent_MouseButtonDown:
+-               Debug.Log($"MouseDown: ({vrEvent.data.mouse.x}, {vrEvent.data.mouse.y})");
+-               break;
+
+            case (uint)EVREventType.VREvent_MouseButtonUp:
+-               Debug.Log($"MouseUp: ({vrEvent.data.mouse.x}, {vrEvent.data.mouse.y})");
++               var button = GetButtonByPosition(vrEvent.data.mouse.x, vrEvent.data.mouse.y);
++               Debug.Log(button);
+                break;
+        }
+    }
+}
+```
+
+プログラムを実行して、ダッシュボードのボタンをクリックすると、ログにボタン名が表示されることを確認します。
+（現状ではクリックしたボタンと違うボタン名が表示されますが正常です。）
+なにもないところをクリックすると null が返ってきます。
+![](/images/button-click-log.png)
+
+## クリック座標の上下を反転させる
+クリックしたボタンと逆のボタンが取得されているのは、マウスクリック時に通知される座標系の Y 軸の上下がオーバーレイと Unity の Canvas で逆になっているためです。
+
+OpenVR Overlay のマウスイベントは、オーバーレイの左下を (0, 0) として返すようになっており、Unity と一致しています。
+しかし、前のページで DirectX のテクスチャを上下反転して表示させるために使用した `SetOverlayTextureBounds()` の影響によって、通知される座標の上下も逆になっています。
+（オーバーレイの左上をクリックすると (0, 0) が返ってくる状態になっています。）
+
+このチュートリアルでは DirectX のテクスチャを使用し、必ず `SetOerlayTextureBounds()` を使ってテクスチャの上下を反転させているという前提の元、クリックされたマウス座標の Y 軸をイベント処理内で反転させます。
+```diff cs:DashboardOverlay.cs
+void Update()
+{
+    Overlay.SetOverlayRenderTexture(dashboardHandle, renderTexture);
+
+    var vrEvent = new VREvent_t();
+    var uncbVREvent = (uint)System.Runtime.InteropServices.Marshal.SizeOf(typeof(VREvent_t));
+    while (OpenVR.Overlay.PollNextOverlayEvent(dashboardHandle, ref vrEvent, uncbVREvent))
+    {
+        switch (vrEvent.eventType)
+        {
+            case (uint)EVREventType.VREvent_MouseButtonUp:
++               vrEvent.data.mouse.y = renderTexture.height - vrEvent.data.mouse.y;
+                var button = GetButtonByPosition(vrEvent.data.mouse.x, vrEvent.data.mouse.y);
+                Debug.Log(button);
+                break;
+        }
+    }
+}
+```
+
+プログラムを実行して、Left Hand と Right Hand のボタンをクリックして、正しいボタンが取れていることを確認します。
+![](/images/correct-button-log.png)
+
+
+※ DirectX 以外に対応させる場合や、`SetOverlayTextureBounds()` を使わない場合は、それぞれ適切に処理してください。
+
+
+## ボタンのクリックで左右のコントローラ表示を入れ替え
+これでクリックされたボタンを取得できたので、そのボタンに設定された OnClick() を実行します。
+
+```diff cs:DashboardOverlay.cs
+void Update()
+{
+    Overlay.SetOverlayRenderTexture(dashboardHandle, renderTexture);
+
+    var vrEvent = new VREvent_t();
+    var uncbVREvent = (uint)System.Runtime.InteropServices.Marshal.SizeOf(typeof(VREvent_t));
+    while (OpenVR.Overlay.PollNextOverlayEvent(dashboardHandle, ref vrEvent, uncbVREvent))
+    {
+        switch (vrEvent.eventType)
+        {
+            case (uint)EVREventType.VREvent_MouseButtonUp:
+                vrEvent.data.mouse.y = renderTexture.height - vrEvent.data.mouse.y;
+                var button = GetButtonByPosition(vrEvent.data.mouse.x, vrEvent.data.mouse.y);
+-               Debug.Log(button);
++               if (button != null)
++               {
++                   button.onClick.Invoke();
++               }
+                break;
+        }
+    }
+}
+
+```
+
+プログラムを実行してダッシュボードを開き、ボタンをクリックすると、左右どちらの手に時計を表示するか設定できるようになっていることを確認します。
+![](/images/switch-hand.gif)
+
+これでダッシュボードオーバーレイの作成と、左右コントローラの切り替えは完了です。
 
 
 ## コード整理

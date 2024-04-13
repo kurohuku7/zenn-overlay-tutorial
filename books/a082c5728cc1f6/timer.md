@@ -282,16 +282,15 @@ private void Update()
 ![](/images/realtime-rendering.gif)
 
 ### 上下を反転させる
-オーバーレイの下側に Unity の空が表示されていますね。
+オーバーレイの下側に Unity の空が表示されています。
 テクスチャの上下が反転しているので、正しい向きに直します。
-逆さまになっているのは DirectX と OpenGL の UV 座標系の違いによるもので、DirectX が使用されていると反転します。
 
+テクスチャの UV 座標系が、Unity や OpenGL は左下が (0, 0)、Direct X は左上が (0, 0) になっているので、Unity から DirectX にテクスチャを渡すと上下が逆になります。
 https://docs.unity3d.com/ja/current/Manual/SL-PlatformDifferences.html
 
-[SetOverlayTextureBounds()](https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.CVROverlay.html#Valve_VR_CVROverlay_SetOverlayTextureBounds_System_UInt64_Valve_VR_VRTextureBounds_t__) で UV 座標系の V 軸（縦方向）を逆にすることで上下を反転できます。（詳細は [Wiki](https://github.com/ValveSoftware/openvr/wiki/IVROverlay::SetOverlayTextureBounds) を参照）
-これはテクスチャのどの範囲を描画するか指定する関数ですが、向きを変えるためにも使用できます。
+正しい向きにする方法は色々ありますが、今回は [SetOverlayTextureBounds()](https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.CVROverlay.html#Valve_VR_CVROverlay_SetOverlayTextureBounds_System_UInt64_Valve_VR_VRTextureBounds_t__) でオーバーレイに描画するテクスチャの UV 座標系の V 軸（縦方向）を逆にすることで上下を反転させます。（詳細は [Wiki](https://github.com/ValveSoftware/openvr/wiki/IVROverlay::SetOverlayTextureBounds) を参照）
+`SetOverlayTextureBounds()` はテクスチャのどの範囲を描画するかを指定する関数ですが、向きを変えるためにも使用できます。
 デフォルトでは vMin = 0, vMax = 1 ですが、縦方向を逆にするため vMin = 1, vMax = 0 を渡します。
-
 
 ```diff cs:WatchOverlay.cs
 private void Start()
@@ -413,6 +412,7 @@ Text (TMP) に Watch.cs を追加します。
 ## コードの整理
 
 ### オーバーレイの上下反転
+TODO: 反転を Graphics.Blit でやる
 `flipOverlayVertical()` として関数に分けておきます。
 ```diff cs:WatchOverlay.cs
 private void Start()
