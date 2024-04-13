@@ -18,6 +18,7 @@ chapters:
   - "relative-position"
   - "timer"
   - "dashboard"
+  - "dashboard-codes"
   - "interaction"
   - "build"
   - "help"
