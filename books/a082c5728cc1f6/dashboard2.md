@@ -211,7 +211,7 @@ HMD を被らずにイベントの動作確認をするときには Overlay View
 ## クリックされた要素を取得する
 
 マウスイベントの座標から、どのボタンがクリックされたのかを判定します。
-Canvas の [Graphic Raycaster](https://docs.unity3d.com/Packages/com.unity.ugui@1.0/api/UnityEngine.UI.GraphicRaycaster.html) を使って、カメラからクリック座標へレイを飛ばし、レイがぶつかった要素を取得します。
+Canvas の [Graphic Raycaster](https://docs.unity3d.com/Packages/com.unity.ugui@1.0/api/UnityEngine.UI.GraphicRaycaster.html) を使って、クリックされた座標の要素を取得します。
 
 ### Graphic Raycaster を取得
 GraphicRaycaster の変数を追加します。

@@ -8,8 +8,8 @@ free: false
 ![](/images/3sec-display.gif)
 
 
-Unity でコントローラの入力を取る方法は色々あります。
-VR のコントローラの入力方法は他のチュートリアルでもよく紹介されているので、ここでは [OpenVR の Input API (SteamVR Input)](https://github.com/ValveSoftware/openvr/wiki/SteamVR-Input) を使った入力方法で作ってみます。
+Unity で VR のコントローラの入力を取る方法は色々あり、情報も多いかと思います。
+ここでは [OpenVR の Input API (SteamVR Input)](https://github.com/ValveSoftware/openvr/wiki/SteamVR-Input) を使った入力方法で作ってみます。
 
 ## 事前設定
 SteamVR の Setting を開きます。
@@ -533,10 +533,21 @@ public class WatchOverlay : MonoBehaviour
 ![](/images/3sec-display.gif)
 
 ## 完成
-これで時計アプリは完成です。
-OpenVR の初期化から、オーバーレイの作成、画像ファイルの表示、大きさと位置の変更、デバイス追従、カメラ映像の表示、ダッシュボードの作成、コントローラの操作と、オーバーレイ作成に必要な基本的なところは押さえられていると思います。
+これでチュートリアルの時計アプリは完成です！
 
-次のページに気にどこを見ればよいかなどの追加情報を次のページにまとめてあります。
-VR ゲームに持ち込めるオリジナルの便利ツールを作ってみてください。
+ここまで
+
+- OpenVR の初期化
+- オーバーレイの作成
+- 画像ファイルの表示
+- 大きさと位置の変更
+- デバイス追従
+- カメラ映像の表示
+- ダッシュボードの作成
+- コントローラの操作
+
+と、オーバーレイアプリ開発に必要となりそうな、基本的なところは押さえられているかなと思います。
+
+次のページでは、更に詳しく調べる際にどこを見ればよいかなど、参考情報をまとめてあります。次は VR ゲームに持ち込めるオリジナルの便利ツールを作ってみてください。
 
 TODO: streamingAssetPath の PathCombine はやりすぎなので消す（画像ファイル表示）
