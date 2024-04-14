@@ -77,7 +77,7 @@ private void Start()
     InitOpenVR();
     overlayHandle = CreateOverlay("WatchOverlayKey", "WatchOverlay");
     
--   var filePath = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg");
+-   var filePath = Application.streamingAssetsPath + "/sns-icon.jpg";
 -   SetOverlayFromFile(overlayHandle, filePath);
 
     SetOverlaySize(overlayHandle, size);

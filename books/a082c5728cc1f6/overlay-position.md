@@ -16,7 +16,7 @@ private void Start()
     InitOpenVR();
     overlayHandle = CreateOverlay("WatchOverlayKey", "WatchOverlay");
 
-    var filePath = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg");
+    var filePath = Application.streamingAssetsPath + "/sns-icon.jpg";
     SetOverlayFromFile(overlayHandle, filePath);
 
 +   var error = OpenVR.Overlay.SetOverlayWidthInMeters(overlayHandle, 0.5f);
@@ -66,7 +66,7 @@ private void Start()
     InitOpenVR();
     overlayHandle = CreateOverlay("WatchOverlayKey", "WatchOverlay");
 
-    var filePath = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg");
+    var filePath = Application.streamingAssetsPath + "/sns-icon.jpg";
     SetOverlayFromFile(overlayHandle, filePath);
     
     var error = OpenVR.Overlay.SetOverlayWidthInMeters(overlayHandle, 1);
@@ -120,7 +120,7 @@ public class WatchOverlay : MonoBehaviour
         InitOpenVR();
         overlayHandle = CreateOverlay("WatchOverlayKey", "WatchOverlay");
         
-        var filePath = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg");
+        var filePath = Application.streamingAssetsPath + "/sns-icon.jpg";
         SetOverlayFromFile(overlayHandle, filePath);
 
 +       SetOverlaySize(overlayHandle, 0.5f);
@@ -177,7 +177,7 @@ public class WatchOverlay : MonoBehaviour
         InitOpenVR();
         overlayHandle = CreateOverlay("WatchOverlayKey", "WatchOverlay");
         
-        var filePath = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg");
+        var filePath = Application.streamingAssetsPath + "/sns-icon.jpg";
         SetOverlayFromFile(overlayHandle, filePath);
 
         SetOverlaySize(overlayHandle, 0.5f);
@@ -235,7 +235,7 @@ public class WatchOverlay : MonoBehaviour
         InitOpenVR();
         overlayHandle = CreateOverlay("WatchOverlayKey", "WatchOverlay");
 
-        var filePath = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg");
+        var filePath = Application.streamingAssetsPath + "/sns-icon.jpg";
         SetOverlayFromFile(overlayHandle, filePath);
 
         SetOverlaySize(overlayHandle, 0.5f);

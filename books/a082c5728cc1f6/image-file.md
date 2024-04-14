@@ -28,7 +28,7 @@ void Start()
     InitOpenVR();
     overlayHandle = CreateOverlay("WatchOverlayKey", "WatchOverlay");
 
-+   var filePath = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg");
++   var filePath = Application.streamingAssetsPath + "/sns-icon.jpg";
 +   var error = OpenVR.Overlay.SetOverlayFromFile(overlayHandle, filePath);
 +   if (error != EVROverlayError.None)
 +   {
@@ -57,7 +57,7 @@ private void Start()
     InitOpenVR();
     overlayHandle = CreateOverlay("WatchOverlayKey", "WatchOverlay");
 
-    var filePath = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg");
+    var filePath = Application.streamingAssetsPath + "/sns-icon.jpg";
     var error = OpenVR.Overlay.SetOverlayFromFile(overlayHandle, filePath);
     if (error != EVROverlayError.None)
     {
@@ -94,7 +94,7 @@ void Start()
     InitOpenVR();
     overlayHandle = CreateOverlay("WatchOverlayKey", "WatchOverlay");
 
-    var filePath = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg")
+    var filePath = Application.streamingAssetsPath + "/sns-icon.jpg";
 -   var error = OpenVR.Overlay.SetOverlayFromFile(overlayHandle, filePath);
 -   if (error != EVROverlayError.None)
 -   {
@@ -133,7 +133,7 @@ void Start()
     InitOpenVR();
     overlayHandle = CreateOverlay("WatchOverlayKey", "WatchOverlay");
 
-    var filePath = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg")
+    var filePath = Application.streamingAssetsPath + "/sns-icon.jpg";
     SetOverlayFromFile(overlayHandle, filePath);
 +   ShowOverlay(overlayHandle);
 -   error = OpenVR.Overlay.ShowOverlay(overlayHandle);
@@ -173,7 +173,7 @@ public class WatchOverlay : MonoBehaviour
         InitOpenVR();
         overlayHandle = CreateOverlay("WatchOverlayKey", "WatchOverlay");
 
-        var filePath = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg");
+        var filePath = Application.streamingAssetsPath + "/sns-icon.jpg";
         SetOverlayFromFile(overlayHandle, filePath);
         ShowOverlay(overlayHandle);
     }

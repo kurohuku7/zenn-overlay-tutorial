@@ -23,7 +23,7 @@ private void Start()
 -   var rotation = Quaternion.Euler(0, 0, 45);
 -   SetOverlayTransformAbsolute(overlayHandle, position, rotation);
 
-    var filePath = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg");
+    var filePath = Application.streamingAssetsPath + "/sns-icon.jpg";
     SetOverlayFromFile(overlayHandle, filePath);
 
     SetOverlaySize(overlayHandle, 0.5f);
@@ -54,7 +54,7 @@ private void Start()
 +       throw new Exception("オーバーレイの位置設定に失敗しました: " + error);
 +   }
 
-    var filePath = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg");
+    var filePath = Application.streamingAssetsPath + "/sns-icon.jpg";
     SetOverlayFromFile(overlayHandle, filePath);
 
     SetOverlaySize(overlayHandle, 0.5f);
@@ -85,7 +85,7 @@ private void Start()
 -       throw new Exception("オーバーレイの位置設定に失敗しました: " + error);
 -   }
 
-    var filePath = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg");
+    var filePath = Application.streamingAssetsPath + "/sns-icon.jpg";
     SetOverlayFromFile(overlayHandle, filePath);
 
     SetOverlaySize(overlayHandle, 0.5f);
@@ -129,7 +129,7 @@ private void Start()
 -   var rotation = Quaternion.Euler(0, 0, 0);
 -   SetOverlayTransformRelative(overlayHandle, OpenVR.k_unTrackedDeviceIndex_Hmd, position, rotation);
 
-    var filePath = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg");
+    var filePath = Application.streamingAssetsPath + "/sns-icon.jpg";
     SetOverlayFromFile(overlayHandle, filePath);
 
     SetOverlaySize(overlayHandle, 0.5f);
@@ -149,7 +149,7 @@ private void Start()
 
 +   var leftControllerIndex = OpenVR.System.GetTrackedDeviceIndexForControllerRole(ETrackedControllerRole.LeftHand);
 
-    var filePath = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg");
+    var filePath = Application.streamingAssetsPath + "/sns-icon.jpg";
     SetOverlayFromFile(overlayHandle, filePath);
 
     SetOverlaySize(overlayHandle, 0.5f);
@@ -185,7 +185,7 @@ private void Start()
 +       SetOverlayTransformRelative(overlayHandle, leftControllerIndex, position, rotation);
 +   }
 
-    var filePath = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg");
+    var filePath = Application.streamingAssetsPath + "/sns-icon.jpg";
     SetOverlayFromFile(overlayHandle, filePath);
 
     SetOverlaySize(overlayHandle, 0.5f);
@@ -253,7 +253,7 @@ private void Start()
 
     SetOverlayTransformRelative(overlayHandle, leftControllerIndex, position, rotation);
 
-    var filePath = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg");
+    var filePath = Application.streamingAssetsPath + "/sns-icon.jpg";
     SetOverlayFromFile(overlayHandle, filePath);
 
 -   SetOverlaySize(overlayHandle, 0.5f);
@@ -357,7 +357,7 @@ private void Update()
 -           SetOverlayTransformRelative(overlayHandle, leftControllerIndex, position, rotation);
 -       }
 
-        var filePath = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg");
+        var filePath = Application.streamingAssetsPath + "/sns-icon.jpg";
         SetOverlayFromFile(overlayHandle, filePath);
 
         SetOverlaySize(overlayHandle, size);
@@ -407,7 +407,7 @@ public class WatchOverlay : MonoBehaviour
         InitOpenVR();
         overlayHandle = CreateOverlay("WatchOverlayKey", "WatchOverlay");
         
-        var filePath = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg");
+        var filePath = Application.streamingAssetsPath + "/sns-icon.jpg";
         SetOverlayFromFile(overlayHandle, filePath);
 
         SetOverlaySize(overlayHandle, size);

@@ -172,7 +172,7 @@ private void Start()
         throw new Exception("ダッシュボード‐バーレイの作成に失敗しました: " + error);
     }
 
-    var filePath = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg");
+    var filePath = Application.streamingAssetsPath + "/sns-icon.jpg";
     Overlay.SetOverlayFromFile(thumbnailHandle, filePath);
 
     Overlay.SetOverlaySize(dashboardHandle, 2.5f);
@@ -488,7 +488,7 @@ private void Start()
 -   }
 +   (dashboardHandle, thumbnailHandle) = Overlay.CreateDashboardOverlay("WatchDashboardKey", "Watch Setting");
 
-    var filePath = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg");
+    var filePath = Application.streamingAssetsPath + "/sns-icon.jpg";
     Overlay.SetOverlayFromFile(thumbnailHandle, filePath);
 
     Overlay.SetOverlaySize(dashboardHandle, 2.5f);
@@ -558,7 +558,7 @@ private void Start()
 
     (dashboardHandle, thumbnailHandle) = Overlay.CreateDashboardOverlay("WatchDashboardKey", "Watch Setting");
 
-    var filePath = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg");
+    var filePath = Application.streamingAssetsPath + "/sns-icon.jpg";
     Overlay.SetOverlayFromFile(thumbnailHandle, filePath);
 
     Overlay.SetOverlaySize(dashboardHandle, 2.5f);
@@ -756,7 +756,7 @@ public class DashboardOverlay : MonoBehaviour
         OpenVRUtil.System.InitOpenVR();
         (dashboardHandle, thumbnailHandle) = Overlay.CreateDashboardOverlay("WatchDashboardKey", "Watch Setting");
 
-        var filePath = System.IO.Path.Combine(Application.streamingAssetsPath, "sns-icon.jpg");
+        var filePath = Application.streamingAssetsPath + "/sns-icon.jpg";
         Overlay.SetOverlayFromFile(thumbnailHandle, filePath);
 
         Overlay.SetOverlaySize(dashboardHandle, 2.5f);
