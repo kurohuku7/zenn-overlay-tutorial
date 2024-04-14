@@ -8,9 +8,8 @@ free: false
 https://github.com/ValveSoftware/openvr/wiki/API-Documentation
 
 
-Wiki に書かれていない詳細な情報は C++ のヘッダファイルにコメントで書かれていることが多いです。
-こんなことできないかな？と思ったら、とりあえずヘッダファイルの関数を探してみるのが良いと思います。
-https://github.com/ValveSoftware/openvr/blob/master/headers/openvr.h
+Wiki に書かれていない詳細な情報は C++ のヘッダファイルにコメントで書かれていることが多いです。こういう機能ないかな？と思ったら、とりあえずヘッダファイルを探ってみるのが良いと思います。
+[https://github.com/ValveSoftware/openvr/blob/master/headers/openvr.h](https://github.com/ValveSoftware/openvr/blob/master/headers/openvr.h)
 
 ## SteamVR Unity Plugin リポジトリ
 OpenVR には含まれていない Unity 向けのユーティリティが入っていたりします。
@@ -32,25 +31,28 @@ https://github.com/Hotrian/OpenVRDesktopDisplayPortal
 [VaNiiMenu](https://sabowl.sakura.ne.jp/gpsnmeajp/unity/vaniimenu/) や [EVMC4U](https://gpsnmeajp.github.io/EasyVirtualMotionCaptureForUnity-documents/)、[Virtual Motion Tracker](https://gpsnmeajp.github.io/VirtualMotionTrackerDocument/) 等を開発されている Segment 氏が公開されている記事は特に参考になりました。
 https://qiita.com/gpsnmeajp/items/421e3853465df3b1520b
 
-余談ですが [VR 酔い対策ツール](https://store.steampowered.com/app/1393780/)を作った際に、最初は OpenVR のリポジトリを見て C++ で開発しようとしたものの、サンプルを動かすだけでも予想以上に手間取って「これは先が長いな...」と思っていた矢先、Segment 氏が公開されていた Unity のサンプルを見つけて試しに動かしてところ、あっさりと動かせてしまったので Unity で開発することにした経緯があります。
+（余談ですが [VR 酔い対策ツール](https://store.steampowered.com/app/1393780/)を作った際に、最初は OpenVR のリポジトリを見て C++ で開発しようとしたものの、公式のサンプルを動かすだけでも想像以上に手間取って「これは先が長いな...」と思っていた矢先、Segment 氏が公開されていた Unity のサンプルを見つけて試しに動かしてみたら、あっさりと動かせてしまったので Unity で開発することにした経緯があります。）
 
 ## 3D オブジェクトを表示したい
 両目に視差のある画像を表示することで、オーバーレイで立体物を表示できます。
-例えば VR ペイントアプリの [Vermillion](https://store.steampowered.com/app/1608400/Vermillion__VR_Painting/) は、オーバーレイアプリとしてオブジェクトを立体で表示できるモードがあり、任意の VR ゲームで画材を持ち込めるようにしています。
+例えば VR ペイントアプリの [Vermillion](https://store.steampowered.com/app/1608400/Vermillion__VR_Painting/) は、オーバーレイとして 3D オブジェクトを表示できる機能があり、任意の VR ゲームへ画材を持ち込めるようになっています。
 https://youtu.be/udc1i97KPLY?si=pZ_Y5mJG2LyYVo9w
 
-### 手法1: Stereo Overlay
-VROverlayFlags
-VROverlayFlags_StereoPanorama
+チュートリアル本文のような十分な情報は準備できていないのですが、取り急ぎ知っている手法をざっくりと書いておきます。
+
+### 手法1: SideBySide
+`SetOverlayFlags()` で `VROverlayFlags_SideBySide_Parallel` または `VROerlayFlags_SideBySide_Crossed` を指定することで、SideBySide 画像を表示できます。
+SideBySide 画像は、画像の半分を左目に、もう半分を右目に表示することで、立体に見える画像です。
+Unity 上でも左目用と右目用のカメラを作成して、それぞれの映像から SideBySide 画像を作ることで立体視が実現できます。
 
 ### 手法2: Stereo Panorama
+`SetOverlayFlag()` で `VROverlayFlags_StereoPanorama` を指定すると Stereo Panorama が使えます。
+こちらも 1 枚の画像を左目用の領域と右目用のよう領域に分けて使用するものです。
 
-
-### 手法3: Projection Overlay
-Projection Overlay を使うと左目または右目だけに表示されるオーバーレイを作れます。
+### 手法3: Overlay Projection
+`SetOverlayTransformProjection()` を使うと左目だけ、または右目だけに表示されるオーバーレイを作れます。
 目の位置を取りたいときは `GetEyeToHeadTransform()` で目から HMD への変換行列が取得できます。
 Origin → HMD → Eye と変換していくと目の座標が計算できます。
-`SetOverlayTransformProjection()` あたりを調べてみてください。
 https://x.com/kurohuku7/status/1566307113697423360
 
 ### 手法4: 平面の組み合わせ
@@ -60,7 +62,7 @@ https://x.com/kurohuku7/status/1566307113697423360
 また、風のエフェクトは円筒状に丸めたオーバーレイの中に HMD が入るように配置することで、立体的に見えるような風を表現しています。
 https://youtu.be/vv-e_6-vjiE?si=JMYUDWER3vI6ujZm
 
-立体視については、`openvr.h` 内を `stereo` で検索すると手がかりが出てきます。
+立体視については、`openvr.h` 内を `stereo` や `sidebyside` で検索すると手がかりが出てきます。
 
 ## HMD に表示されている画像を取得したい
 `OpenVR.Compositor.GetMirrorTextureD3D11()` や `GetMirrorTextureGL()` で取得できます。
