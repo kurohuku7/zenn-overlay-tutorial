@@ -1,5 +1,5 @@
 ---
-title: "カメラ映像の票z"
+title: "カメラ映像の表示"
 free: false
 ---
 

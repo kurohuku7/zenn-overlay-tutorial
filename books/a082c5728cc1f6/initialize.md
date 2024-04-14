@@ -85,6 +85,7 @@ public class WatchOverlay : MonoBehaviour
 初期化時のエラーは [EVRInitiError](https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.EVRInitError.html) に定義されています。
 `using System` は `Exception` を使用するために追加しています。 
 
+
 ## 既に初期化されている場合
 OpenVR が他の場所で既に初期化されている場合には、初期化を実行しないようにします。
 ```diff cs:WatchOverlay.cs
@@ -265,6 +266,42 @@ public class WatchOverlay : MonoBehaviour
 +   }
 }
 ```
+
+:::details throw ではなく return でエラー処理をしたい
+このチュートリアルでは、コードの見やすさを優先して、基本的にエラー時は `throw` で例外を発生させて処理を中断させています。
+`return` でエラーコードや `bool` 値を返したい場合は、下記のように読み替えてください。
+
+```cs:エラーコードを返す例
+private bool InitOpenVR()
+{
+    if (OpenVR.System != null) return;
+
+    var error = EVRInitError.None;
+    OpenVR.Init(ref error, EVRApplicationType.VRApplication_Overlay);
+    if (error != EVRInitError.None)
+    {
+        Debug.LogError("OpenVR の初期化に失敗しました: " + error);
+    }
+    return error;
+}
+```
+```cs:bool 値を返す例
+// 初期化に成功したら true, 失敗したら false を返す
+private bool InitOpenVR()
+{
+    if (OpenVR.System != null) return;
+
+    var error = EVRInitError.None;
+    OpenVR.Init(ref error, EVRApplicationType.VRApplication_Overlay);
+    if (error != EVRInitError.None)
+    {
+        Debug.LogError("OpenVR の初期化に失敗しました: " + error);
+        return false;
+    }
+    return true;
+}
+```
+:::
 
 ## クリーンアップ処理の整理
 同様にクリーンアップ処理を `ShutdownOpenVR()` として関数に分けておきます。
