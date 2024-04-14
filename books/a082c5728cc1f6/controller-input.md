@@ -115,7 +115,7 @@ public class InputController : MonoBehaviour
     {
         OpenVRUtil.System.InitOpenVR();
 
-        var error = OpenVR.Input.SetActionManifestPath(Application.dataPath + "/StreamingAssets/SteamVR/actions.json");
+        var error = OpenVR.Input.SetActionManifestPath(Application.streamingAssetsPath + "/SteamVR/actions.json");
         if (error != EVRInputError.None)
         {
             throw new Exception("Action Manifest パスの指定に失敗しました: " + error);
@@ -139,7 +139,7 @@ void Start()
 {
     OpenVRUtil.System.InitOpenVR();
 
-    var error = OpenVR.Input.SetActionManifestPath(Application.dataPath + "/StreamingAssets/SteamVR/actions.json");
+    var error = OpenVR.Input.SetActionManifestPath(Application.streamingAssetsPath + "/SteamVR/actions.json");
     if (error != EVRInputError.None)
     {
         throw new Exception("Action Manifest パスの指定に失敗しました: " + error);
@@ -182,7 +182,7 @@ void Start()
 {
     OpenVRUtil.System.InitOpenVR();
 
-    var error = OpenVR.Input.SetActionManifestPath(Application.dataPath + "/StreamingAssets/SteamVR/actions.json");
+    var error = OpenVR.Input.SetActionManifestPath(Application.streamingAssetsPath + "/SteamVR/actions.json");
     if (error != EVRInputError.None)
     {
         throw new Exception("Action Manifest パスの指定に失敗しました: " + error);
@@ -549,5 +549,3 @@ public class WatchOverlay : MonoBehaviour
 と、オーバーレイアプリ開発に必要となりそうな、基本的なところは押さえられているかなと思います。
 
 次のページでは、更に詳しく調べる際にどこを見ればよいかなど、参考情報をまとめてあります。次は VR ゲームに持ち込めるオリジナルの便利ツールを作ってみてください。
-
-TODO: streamingAssetPath の PathCombine はやりすぎなので消す（画像ファイル表示）
