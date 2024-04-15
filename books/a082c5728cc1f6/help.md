@@ -24,7 +24,7 @@ https://github.com/OpenVR-Advanced-Settings/OpenVR-AdvancedSettings
 OVRDrop の前身 OpenVRDesktopDisplayPortal も Unity のプロジェクトがオープンソースとして公開されています。
 https://github.com/Hotrian/OpenVRDesktopDisplayPortal
 
-色々あるので探してみてください。
+他にも参考になるプロジェクトが色々あるので探してみてください。
 
 ## その他チュートリアル
 [VaNiiMenu](https://sabowl.sakura.ne.jp/gpsnmeajp/unity/vaniimenu/) や [EVMC4U](https://gpsnmeajp.github.io/EasyVirtualMotionCaptureForUnity-documents/)、[Virtual Motion Tracker](https://gpsnmeajp.github.io/VirtualMotionTrackerDocument/) 等を開発されている Segment 氏が公開されている記事は特に参考になりました。
