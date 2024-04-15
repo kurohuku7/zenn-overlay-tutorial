@@ -4,12 +4,16 @@ free: false
 ---
 
 ## 動作環境
-このチュートリアルでは、下記の環境でコードの動作を確認しています。
+このチュートリアルでは、下記の環境で動作確認しています。
 
 - SteamVR beta 2.5.2
 - Unity 2022.3.21
 - SteamVR Unity Plugin v2.8.0 （OpenVR v2.0.10）
+- Meta Quest 3 (ファームウェア v63)
+- Virtual Desktop v1.30.5
 - Windows 11
+
+※ SteamVR が使用できる環境であれば HMD や接続方法が異なっていても問題ありません。
 
 ## 読む順番
 最初から順番に読み進めることを想定しています。
