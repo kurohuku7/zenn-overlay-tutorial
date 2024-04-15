@@ -23,12 +23,14 @@ https://assetstore.unity.com/packages/tools/integration/steamvr-plugin-32647
 
 :::details 必要なファイルだけを OpenVR リポジトリから取得する場合
 上の説明では SteamVR Plugin に OpenVR のファイルが含まれているためインストールしています。
-SteamVR Plugin を使わずに最小限のファイルだけを導入したい場合は、OpenVR のリポジトリから
+
+SteamVR Plugin を使わずに最小限のファイルだけを導入したい場合や、最新の OpenVR を使いたい場合は、OpenVR の GitHub リポジトリから
 
 - **headers/openvr_api.cs**
 - **bin/win64/openvr_api.dll**（他のプラットフォームで動かす場合は、対応する dll ファイル）
 
 をダウンロードして Assets フォルダ内に配置してください。
+
 ※チュートリアルでは SteamVR Plugin 内のユーティリティ関数を使用しているコードがあります。
 
 https://github.com/ValveSoftware/openvr

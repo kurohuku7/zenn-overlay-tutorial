@@ -3,15 +3,12 @@ title: "はじめに"
 free: false
 ---
 
-このチュートリアルについての注意書きです。
-
 ## 動作環境
-下記の環境でコードの動作を確認しています。
+このチュートリアルでは、下記の環境でコードの動作を確認しています。
 
-- SteamVR beta 2.5.1
-- Unity 2022.3.20
-- SteamVR Unity Plugin v2.8.0
-- OpenVR v2.5.1
+- SteamVR beta 2.5.2
+- Unity 2022.3.21
+- SteamVR Unity Plugin v2.8.0 （OpenVR v2.0.10）
 - Windows 11
 
 ## 読む順番
@@ -24,4 +21,3 @@ free: false
 OpenVR のドキュメントにかかれていない情報も含むため、一部間違った情報が含まれている可能性があります。
 何かあれば [@kurohuku7](https://twitter.com/kurohuku7) へご連絡ください。
 このチュートリアルの本文は GitHub の公開リポジトリに入っているので、修正のプルリクエストを送信することもできます。
-
