@@ -147,10 +147,10 @@ public class WatchOverlay : MonoBehaviour
 SteamVR に同梱されている Overlay Viewer を使って、実際にオーバーレイが作られているか確認してみましょう。
 
 SteamVR のウィンドウのメニューから Developer > Overlay Viewer を選択します。
-![](https://storage.googleapis.com/zenn-user-upload/ca13bcee2bec-20240306.png)
+![](/images/overlay-viewer-menu.png)
 
 Overlay Viewer では、SteamVR 上に作成されているオーバーレイの一覧を確認できます。
-![](https://storage.googleapis.com/zenn-user-upload/af20c02e2a1b-20240306.png)
+![](/images/overlay-list.png)
 
 この状態でプログラムを実行してみましょう。
 Overlay Viewer の左上の一覧に、先ほど指定したキー `WatchOverlayKey` が追加されます。

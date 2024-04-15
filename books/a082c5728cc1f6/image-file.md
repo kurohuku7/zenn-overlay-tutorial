@@ -42,7 +42,7 @@ void Start()
 
 プログラムを実行後、Overlay Viewer でオーバーレイを確認します。
 WatchOverlayKey のプレビューに画像が描画されています。
-![](https://storage.googleapis.com/zenn-user-upload/c7cc3e4edf39-20240306.png)
+![](/images/image-file-preview.png)
 
 
 ## 表示状態の切り替え

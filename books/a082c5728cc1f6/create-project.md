@@ -6,20 +6,20 @@ free: false
 ## プロジェクトの新規作成
 任意の名前で Unity の新規プロジェクトを作成します。
 プロジェクトテンプレートは 3D を選択します。
-![](https://storage.googleapis.com/zenn-user-upload/df7746e620dc-20240227.png)
+![](/images/create-project.png)
 
 ## SteamVR Plugin のインストール
 Unity Asset Store で SteamVR Plugin をMyアセットに追加します。
 https://assetstore.unity.com/packages/tools/integration/steamvr-plugin-32647
 
 そのまま Asset Store 上で「Unityで開く」ボタンを押すと Unity の Package Manager が開くので、パッケージをインポートします。
-![](https://storage.googleapis.com/zenn-user-upload/14df39868604-20240122.png)
+![](/images/import-package.png)
 
 ダイアログが表示されたら、指示に従って OK をクリック後、Unity を再起動します。
-![](https://storage.googleapis.com/zenn-user-upload/735f69eb776b-20240122.png)
+![](/images/restart-dialog.png)
 
 プロジェクトに Assets/SteamVR フォルダが作られていれば、インストールは完了です。
-![](https://storage.googleapis.com/zenn-user-upload/5089910653b4-20240227.png)
+![](/images/steamvr-folder.png)
 
 :::details 必要なファイルだけを OpenVR リポジトリから取得する場合
 上の説明では SteamVR Plugin に OpenVR のファイルが含まれているためインストールしています。

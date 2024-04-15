@@ -187,11 +187,11 @@ public class WatchOverlay : MonoBehaviour
     }
 }
 ```
-![](https://storage.googleapis.com/zenn-user-upload/f7f7fe7912d6-20240306.png)
+![](/images/api-debug.png)
 
 [OpenVR.CVROverlay](https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.CVROverlay.html) が、初期化前は Null, 初期化後にインスタンスになっています。
 また SteamVR を起動していない場合は、Init() によって SteamVR が起動されるようになります。
-![](https://storage.googleapis.com/zenn-user-upload/30d14f878b47-20240306.png)
+![](/images/steamvr.png)
 
 :::details SteamVR Plugin による初期化の設定
 このチュートリアルでは使用しませんが、SteamVR Plugin では、Project Setting で下記の設定を行うことで、プラグイン側で OpenVR を初期化することも可能です。
@@ -199,8 +199,8 @@ public class WatchOverlay : MonoBehaviour
 - XR Plug-in Management で Initialize XR on Startup にチェックを入れる
 - OpenVR で Application Type を Overlay にする
 
-![](https://storage.googleapis.com/zenn-user-upload/626c86347ef3-20240306.png)
-![](https://storage.googleapis.com/zenn-user-upload/67317b23e1eb-20240306.png)
+![](/images/initialize-xr-on-startup.png)
+![](/images/application-type-overlay.png)
 :::
 
 確認できたら、先程追加したデバッグログは削除しておきます。
