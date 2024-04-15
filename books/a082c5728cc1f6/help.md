@@ -3,7 +3,6 @@ title: "その他の情報"
 free: false
 ---
 
-
 ## OpenVR リポジトリ
 https://github.com/ValveSoftware/openvr/wiki/API-Documentation
 
@@ -33,26 +32,30 @@ https://qiita.com/gpsnmeajp/items/421e3853465df3b1520b
 
 （余談ですが [VR 酔い対策ツール](https://store.steampowered.com/app/1393780/)を作った際に、最初は OpenVR のリポジトリを見て C++ で開発しようとしたものの、公式のサンプルを動かすだけでも想像以上に手間取って「これは先が長いな...」と思っていた矢先、Segment 氏が公開されていた Unity のサンプルを見つけて試しに動かしてみたら、あっさりと動かせてしまったので Unity で開発することにした経緯があります。）
 
+## HMD に表示されている画像を取得したい
+`OpenVR.Compositor.GetMirrorTextureD3D11()` や `GetMirrorTextureGL()` で取得できます。
+
 ## 3D オブジェクトを表示したい
 両目に視差のある画像を表示することで、オーバーレイで立体物を表示できます。
 例えば VR ペイントアプリの [Vermillion](https://store.steampowered.com/app/1608400/Vermillion__VR_Painting/) は、オーバーレイとして 3D オブジェクトを表示できる機能があり、任意の VR ゲームへ画材を持ち込めるようになっています。
 https://youtu.be/udc1i97KPLY?si=pZ_Y5mJG2LyYVo9w
 
-チュートリアル本文のような十分な情報は準備できていないのですが、取り急ぎ知っている手法をざっくりと書いておきます。
+チュートリアル本文のような十分な情報は準備できていないのですが、取り急ぎ知っている手法をざっくりまとめておきます。
+※下記は詳細に試していないものもあるので、間違いを含む可能性が高めです。使用する際は改めて他の情報にも当たってみてください。
 
 ### 手法1: SideBySide
-`SetOverlayFlags()` で `VROverlayFlags_SideBySide_Parallel` または `VROerlayFlags_SideBySide_Crossed` を指定することで、SideBySide 画像を表示できます。
-SideBySide 画像は、画像の半分を左目に、もう半分を右目に表示することで、立体に見える画像です。
-Unity 上でも左目用と右目用のカメラを作成して、それぞれの映像から SideBySide 画像を作ることで立体視が実現できます。
+`SetOverlayFlags()` で `VROverlayFlags_SideBySide_Parallel` を指定することで、SideBySide 画像を表示できます。
+`VROverlayFlags_SideBySide_Parallel` を使用したオーバーレイは、画像の半分を左目用に、もう半分を右目用に使用することで、立体視を行います。
+Unity 上で左目用と右目用のカメラを 2 つ作成して、それぞれの映像を 1 枚のテクスチャに並べて描画することで立体をオーバーレイで表示できます。
 
 ### 手法2: Stereo Panorama
 `SetOverlayFlag()` で `VROverlayFlags_StereoPanorama` を指定すると Stereo Panorama が使えます。
-こちらも 1 枚の画像を左目用の領域と右目用のよう領域に分けて使用するものです。
+こちらも 1 枚の画像を左目用と右目用の領域に分けて立体視を実現できます。
 
 ### 手法3: Overlay Projection
 `SetOverlayTransformProjection()` を使うと左目だけ、または右目だけに表示されるオーバーレイを作れます。
-目の位置を取りたいときは `GetEyeToHeadTransform()` で目から HMD への変換行列が取得できます。
-Origin → HMD → Eye と変換していくと目の座標が計算できます。
+目の位置を取りたいときは `GetEyeToHeadTransform()` が使えます。
+Origin → HMD → Eye と変換していくと目の位置が計算できます。
 https://x.com/kurohuku7/status/1566307113697423360
 
 ### 手法4: 平面の組み合わせ
@@ -63,7 +66,3 @@ https://x.com/kurohuku7/status/1566307113697423360
 https://youtu.be/vv-e_6-vjiE?si=JMYUDWER3vI6ujZm
 
 立体視については、`openvr.h` 内を `stereo` や `sidebyside` で検索すると手がかりが出てきます。
-
-## HMD に表示されている画像を取得したい
-`OpenVR.Compositor.GetMirrorTextureD3D11()` や `GetMirrorTextureGL()` で取得できます。
-
