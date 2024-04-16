@@ -6,18 +6,15 @@ free: false
 ## 画像ファイルの準備
 下記の条件の画像ファイルを準備してください。
 
-- 大きさ 1920 x 1080 以内
+- 大きさ 1920 x 1080 px 以内
 - PNG, JPG, TGA 形式（24 or 32 ビットカラー）のいずれか
 
-以降のサンプルでは zenn のプロフィール画像を使って解説します。
+サンプルでは zenn のプロフィール画像 (**sns-icon.jpg**) を使って進めていきます。
 ![](/images/sns-icon.jpg =100x)
 
-## 画像ファイルの設置
-用意した画像を `Assets/StreamingAssets` フォルダに追加します。
+用意した画像を `Assets/StreamingAssets` フォルダに追加してください。
 
 ![](/images/add-image-file.png)
-
-ここでは `sns-icon.jpg` という名前で保存しています。
 
 ## 画像の描画
 画像ファイルの描画には [SetOverlayFromFile()](https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.CVROverlay.html#Valve_VR_CVROverlay_SetOverlayFromFile_System_UInt64_System_String_) を使用します。（詳細は [Wiki](https://github.com/ValveSoftware/openvr/wiki/IVROverlay::SetOverlayFromFile) を参照）
@@ -37,19 +34,21 @@ void Start()
 }
 ```
 
-エラーがなければ `EVROverlayError.None` が返ります。
-[StreamingAssets](https://docs.unity3d.com/Manual/StreamingAssets.html) を使用したのは、[Application.streamingAssetsPath](https://docs.unity3d.com/ScriptReference/Application-streamingAssetsPath.html) で画像ファイルパスを取得するためです。
+`SetOverlayFromFile()` の引数は、オーバーレイハンドルと表示する画像ファイルのパスです。
+[StreamingAssets](https://docs.unity3d.com/Manual/StreamingAssets.html) を使用したのは、実行中に [Application.streamingAssetsPath](https://docs.unity3d.com/ScriptReference/Application-streamingAssetsPath.html) でファイルを読み込むためです。
+エラー処理はこれまでと同様です。
 
-プログラムを実行後、Overlay Viewer でオーバーレイを確認します。
-WatchOverlayKey のプレビューに画像が描画されています。
+プログラムを実行して、Overlay Viewer を起動します。
+オーバーレイ `WatchOverlayKey` をクリックして、プレビューに画像が描画されていれば OK です。
 ![](/images/image-file-preview.png)
 
 
 ## 表示状態の切り替え
-VR 内にオーバーレイを表示します。
 オーバーレイはデフォルトで非表示状態になっています。
+Overlay Viewer では確認できますが、VR 内には表示されていない状態です。
 表示状態の切り替えは [ShowOverlay()](https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.CVROverlay.html#Valve_VR_CVROverlay_ShowOverlay_System_UInt64_) と [HideOverlay()](https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.CVROverlay.html#Valve_VR_CVROverlay_HideOverlay_System_UInt64_) を使います。（詳細は [Wiki](https://github.com/ValveSoftware/openvr/wiki/IVROverlay::ShowOverlay) を参照）
-Start() に ShowOverlay() を追加します。
+
+起動時に `ShowOverlay()` を実行してオーバーレイを表示します。
 
 ```diff cs:WatchOverlay.cs
 private void Start()
@@ -74,13 +73,13 @@ private void Start()
 
 プログラムを実行したら HMD を装着して、足元を確認してください。
 プレイエリアの中心にオーバーレイが表示されているはずです。
-オーバーレイは裏側から見ると表示されないため、見つからない場合は反対側に回り込んでみてください。
+オーバーレイは裏側から見ると表示されないため、もし見つからない場合は反対側に回り込んでみてください。
 
 ![](/images/file-overlay-in-vr.jpg)
 
 
 ![](/images/overlay-in-game.jpg)
-*ゲームの起動中でも動作します（画像は [Legendary Tales](https://store.steampowered.com/app/1465070/Legendary_Tales/)）*
+*VR ゲームの起動中でも動作します（画像は [Legendary Tales](https://store.steampowered.com/app/1465070/Legendary_Tales/)）*
 
 ## コードの整理
 ### 画像ファイルの描画
@@ -135,41 +134,40 @@ void Start()
 
     var filePath = Application.streamingAssetsPath + "/sns-icon.jpg";
     SetOverlayFromFile(overlayHandle, filePath);
-+   ShowOverlay(overlayHandle);
+
 -   error = OpenVR.Overlay.ShowOverlay(overlayHandle);
 -   if (error != EVROverlayError.None)
 -   {
 -       throw new Exception("オーバーレイの表示に失敗しました: " + error);
 -   }
++   ShowOverlay(overlayHandle);
 }
 
 ～省略～
 
-+ // overlayHandle -> handle に変数名を変えています
 + private void ShowOverlay(ulong handle)
 + {
-+     // var を追加しています
 +     var error = OpenVR.Overlay.ShowOverlay(handle);
 +     if (error != EVROverlayError.None)
 +     {
 +         throw new Exception("オーバーレイの表示に失敗しました: " + error);
 +     }
 + }
-
+}
 ```
 
 ### 最終的なコード
 ```cs:WatchOverlay.cs
-using System;
 using UnityEngine;
 using Valve.VR;
+using System;
 
 public class WatchOverlay : MonoBehaviour
 {
     private ulong overlayHandle = OpenVR.k_ulOverlayHandleInvalid;
 
     private void Start()
-    {        
+    {
         InitOpenVR();
         overlayHandle = CreateOverlay("WatchOverlayKey", "WatchOverlay");
 
@@ -177,10 +175,14 @@ public class WatchOverlay : MonoBehaviour
         SetOverlayFromFile(overlayHandle, filePath);
         ShowOverlay(overlayHandle);
     }
+
+    private void OnApplicationQuit()
+    {
+        DestroyOverlay(overlayHandle);
+    }
     
     private void OnDestroy()
     {
-        DestroyOverlay(overlayHandle);
         ShutdownOpenVR();
     }
 
@@ -188,11 +190,11 @@ public class WatchOverlay : MonoBehaviour
     {
         if (OpenVR.System != null) return;
 
-        var initError = EVRInitError.None;
-        OpenVR.Init(ref initError, EVRApplicationType.VRApplication_Overlay);
-        if (initError != EVRInitError.None)
+        var error = EVRInitError.None;
+        OpenVR.Init(ref error, EVRApplicationType.VRApplication_Overlay);
+        if (error != EVRInitError.None)
         {
-            throw new Exception("OpenVRの初期化に失敗しました: " + initError);
+            throw new Exception("OpenVRの初期化に失敗しました: " + error);
         }
     }
 
@@ -203,13 +205,13 @@ public class WatchOverlay : MonoBehaviour
             OpenVR.Shutdown();
         }
     }
-    
+
     private ulong CreateOverlay(string key, string name)
     {
         var handle = OpenVR.k_ulOverlayHandleInvalid;
         var error = OpenVR.Overlay.CreateOverlay(key, name, ref handle);
         if (error != EVROverlayError.None)
-        { 
+        {
             throw new Exception("オーバーレイの作成に失敗しました: " + error);
         }
         return handle;
@@ -219,16 +221,11 @@ public class WatchOverlay : MonoBehaviour
     {
         if (handle != OpenVR.k_ulOverlayHandleInvalid)
         {
-            OpenVR.Overlay.DestroyOverlay(handle);
-        }
-    }
-
-    private void ShowOverlay(ulong handle)
-    {
-        var error = OpenVR.Overlay.ShowOverlay(handle);
-        if (error != EVROverlayError.None)
-        {
-            throw new Exception("オーバーレイの表示に失敗しました: " + error);
+            var error = OpenVR.Overlay.DestroyOverlay(handle);
+            if (error != EVROverlayError.None)
+            {
+                throw new Exception("オーバーレイの破棄に失敗しました: " + error);
+            }
         }
     }
 
@@ -240,5 +237,17 @@ public class WatchOverlay : MonoBehaviour
             throw new Exception("画像ファイルの描画に失敗しました: " + error);
         }
     }
+    
+    private void ShowOverlay(ulong handle)
+    {
+        var error = OpenVR.Overlay.ShowOverlay(handle);
+        if (error != EVROverlayError.None)
+        {
+            throw new Exception("オーバーレイの表示に失敗しました: " + error);
+        }
+    }
 }
 ```
+
+画像ファイルをオーバーレイに描画し、VR 内に表示することができました。
+次のページではオーバーレイの大きさや位置を変えてみます。
