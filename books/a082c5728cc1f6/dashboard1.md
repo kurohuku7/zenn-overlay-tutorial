@@ -710,4 +710,261 @@ public class DashboardOverlay : MonoBehaviour
 ![](/images/dashboard-preview.jpg)
 
 
-次のページでは、引き続きイベントの処理を作成していきます。
+## コード整理
+ダッシュボードオーバーレイの作成を `CreateDashboardOverlay()` として関数に分けます。
+戻り値は `dashboardHandle` と `thumbnailHandle` の 2 つ必要なので、タプルでまとめて返すようにします。
+
+ユーティリティの `Overlay` クラス内へメソッドを追加します。
+```diff cs:OpenVRUtil.cs
+～省略～
+
+public static ulong CreateOverlay(string key, string name)
+{
+    var handle = OpenVR.k_ulOverlayHandleInvalid;
+    var error = OpenVR.Overlay.CreateOverlay(key, name, ref handle);
+    if (error != EVROverlayError.None)
+    {
+        throw new Exception("オーバーレイの作成に失敗しました: " + error);
+    }
+
+    return handle;
+}
+
++ public static (ulong, ulong) CreateDashboardOverlay(string key, string name)
++ {
++     ulong dashboardHandle = 0;
++     ulong thumbnailHandle = 0;
++     var error = OpenVR.Overlay.CreateDashboardOverlay(key, name, ref dashboardHandle, ref thumbnailHandle);
++     if (error != EVROverlayError.None)
++     {
++         throw new Exception("ダッシュボード‐バーレイの作成に失敗しました: " + error);
++     }
++ 
++     return (dashboardHandle, thumbnailHandle);
++ }
+
+～省略～
+```
+
+呼び出し側も変更します。
+```diff cs:DashboardOverlay
+private void Start()
+{
+    OpenVRUtil.System.InitOpenVR();
+
+-   var error = OpenVR.Overlay.CreateDashboardOverlay("WatchDashboardKey", "Watch Setting", ref dashboardHandle, ref thumbnailHandle);
+-   if (error != EVROverlayError.None)
+-   {
+-       throw new Exception("ダッシュボード‐バーレイの作成に失敗しました: " + error);
+-   }
++   (dashboardHandle, thumbnailHandle) = Overlay.CreateDashboardOverlay("WatchDashboardKey", "Watch Setting");
+
+    var filePath = Application.streamingAssetsPath + "/sns-icon.jpg";
+    Overlay.SetOverlayFromFile(thumbnailHandle, filePath);
+
+    Overlay.SetOverlaySize(dashboardHandle, 2.5f);
+    Overlay.FlipOverlayVertical(dashboardHandle);
+}
+```
+
+### 最終的なコード
+```cs:DashboardOverlay.cs
+using UnityEngine;
+using Valve.VR;
+using OpenVRUtil;
+
+public class DashboardOverlay : MonoBehaviour
+{
+    public Camera camera;
+    public RenderTexture renderTexture;
+    private ulong dashboardHandle = OpenVR.k_ulOverlayHandleInvalid;
+    private ulong thumbnailHandle = OpenVR.k_ulOverlayHandleInvalid;
+
+    private void Start()
+    {
+        OpenVRUtil.System.InitOpenVR();
+
+        (dashboardHandle, thumbnailHandle) = Overlay.CreateDashboardOverlay("WatchDashboardKey", "Watch Setting");
+
+        var filePath = Application.streamingAssetsPath + "/sns-icon.jpg";
+        Overlay.SetOverlayFromFile(thumbnailHandle, filePath);
+
+        Overlay.FlipOverlayVertical(dashboardHandle);
+        Overlay.SetOverlaySize(dashboardHandle, 2.5f);
+    }
+
+    private void Update()
+    {
+        Overlay.SetOverlayRenderTexture(dashboardHandle, renderTexture);
+    }
+
+    private void OnApplicationQuit()
+    {
+        Overlay.DestroyOverlay(dashboardHandle);
+    }
+
+    private void OnDestroy()
+    {
+        OpenVRUtil.System.ShutdownOpenVR();
+    }
+}
+```
+
+```cs:OpenVRUtil.cs
+using UnityEngine;
+using Valve.VR;
+using System;
+
+namespace OpenVRUtil
+{
+    public static class System
+    {
+        public static void InitOpenVR()
+        {
+            if (OpenVR.System != null) return;
+
+            var error = EVRInitError.None;
+            OpenVR.Init(ref error, EVRApplicationType.VRApplication_Overlay);
+            if (error != EVRInitError.None)
+            {
+                throw new Exception("OpenVRの初期化に失敗しました: " + error);
+            }
+        }
+
+        public static void ShutdownOpenVR()
+        {
+            if (OpenVR.System != null)
+            {
+                OpenVR.Shutdown();
+            }
+        }
+    }
+
+    public static class Overlay
+    {
+        public static ulong CreateOverlay(string key, string name)
+        {
+            var handle = OpenVR.k_ulOverlayHandleInvalid;
+            var error = OpenVR.Overlay.CreateOverlay(key, name, ref handle);
+            if (error != EVROverlayError.None)
+            {
+                throw new Exception("オーバーレイの作成に失敗しました: " + error);
+            }
+
+            return handle;
+        }
+
+        public static (ulong, ulong) CreateDashboardOverlay(string key, string name)
+        {
+            ulong dashboardHandle = 0;
+            ulong thumbnailHandle = 0;
+            var error = OpenVR.Overlay.CreateDashboardOverlay(key, name, ref dashboardHandle, ref thumbnailHandle);
+            if (error != EVROverlayError.None)
+            {
+                throw new Exception("ダッシュボード‐バーレイの作成に失敗しました: " + error);
+            }
+ 
+            return (dashboardHandle, thumbnailHandle);
+        }
+        
+        public static void DestroyOverlay(ulong handle)
+        {
+            if (handle != OpenVR.k_ulOverlayHandleInvalid)
+            {
+                var error = OpenVR.Overlay.DestroyOverlay(handle);
+                if (error != EVROverlayError.None)
+                {
+                    throw new Exception("オーバーレイの破棄に失敗しました: " + error);
+                }
+            }
+        }
+
+        public static void SetOverlayFromFile(ulong handle, string path)
+        {
+            var error = OpenVR.Overlay.SetOverlayFromFile(handle, path);
+            if (error != EVROverlayError.None)
+            {
+                throw new Exception("画像ファイルの描画に失敗しました: " + error);
+            }
+        }
+
+        public static void ShowOverlay(ulong handle)
+        {
+            var error = OpenVR.Overlay.ShowOverlay(handle);
+            if (error != EVROverlayError.None)
+            {
+                throw new Exception("オーバーレイの表示に失敗しました: " + error);
+            }
+        }
+
+        public static void SetOverlaySize(ulong handle, float size)
+        {
+            var error = OpenVR.Overlay.SetOverlayWidthInMeters(handle, size);
+            if (error != EVROverlayError.None)
+            {
+                throw new Exception("オーバーレイのサイズ設定に失敗しました: " + error);
+            }
+        }
+
+        public static void SetOverlayTransformAbsolute(ulong handle, Vector3 position, Quaternion rotation)
+        {
+            var rigidTransform = new SteamVR_Utils.RigidTransform(position, rotation);
+            var matrix = rigidTransform.ToHmdMatrix34();
+            var error = OpenVR.Overlay.SetOverlayTransformAbsolute(handle, ETrackingUniverseOrigin.TrackingUniverseStanding, ref matrix);
+            if (error != EVROverlayError.None)
+            {
+                throw new Exception("オーバーレイの位置設定に失敗しました: " + error);
+            }
+        }
+
+        public static void SetOverlayTransformRelative(ulong handle, uint deviceIndex, Vector3 position, Quaternion rotation)
+        {
+            var rigidTransform = new SteamVR_Utils.RigidTransform(position, rotation);
+            var matrix = rigidTransform.ToHmdMatrix34();
+            var error = OpenVR.Overlay.SetOverlayTransformTrackedDeviceRelative(handle, deviceIndex, ref matrix);
+            if (error != EVROverlayError.None)
+            {
+                throw new Exception("オーバーレイの位置設定に失敗しました: " + error);
+            }
+        }
+
+        public static void FlipOverlayVertical(ulong handle)
+        {
+            var bounds = new VRTextureBounds_t
+            {
+                uMin = 0,
+                uMax = 1,
+                vMin = 1,
+                vMax = 0
+            };
+
+            var error = OpenVR.Overlay.SetOverlayTextureBounds(handle, ref bounds);
+            if (error != EVROverlayError.None)
+            {
+                throw new Exception("テクスチャの反転に失敗しました: " + error);
+            }
+        }
+
+        public static void SetOverlayRenderTexture(ulong handle, RenderTexture renderTexture)
+        {
+            if (!renderTexture.IsCreated()) return;
+
+            var nativeTexturePtr = renderTexture.GetNativeTexturePtr();
+            var texture = new Texture_t
+            {
+                eColorSpace = EColorSpace.Auto,
+                eType = ETextureType.DirectX,
+                handle = nativeTexturePtr
+            };
+            var error = OpenVR.Overlay.SetOverlayTexture(handle, ref texture);
+            if (error != EVROverlayError.None)
+            {
+                throw new Exception("テクスチャの描画に失敗しました: " + error);
+            }
+        }
+    }
+}
+```
+
+これでダッシュボードオーバーレイを使って、設定画面を表示することができました。
+次のページでは、引き続きダッシュボードの設定画面でボタンを押したときのイベントを作成していきます。
