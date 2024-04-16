@@ -8,33 +8,39 @@ free: false
 ![](/images/3sec-display.gif)
 
 
-Unity で VR のコントローラの入力を取る方法は色々あり、情報も多いかと思います。
-ここでは [OpenVR の Input API (SteamVR Input)](https://github.com/ValveSoftware/openvr/wiki/SteamVR-Input) を使った入力方法で作ってみます。
+Unity で VR のコントローラの入力を取る方法は色々ありますが、ここでは [OpenVR の Input API (SteamVR Input)](https://github.com/ValveSoftware/openvr/wiki/SteamVR-Input) を使った入力方法で作ってみます。
 
 ## 事前設定
-SteamVR の Setting を開きます。
+SteamVR の **Setting** を開きます。
 ![](/images/steamvr-setting.png)
 
-Developer の Enable debugging options in the input binding user interface を On にします。
+**Advanced Settings** を **Show** に切り替えます。
+![](/images/advanced-settings.png)
+
+**Developer** の **Enable debugging options in the input binding user interface** を **On** にします。
 ![](/images/enable-debugging-options.png)
 
 ## Action Manifest の作成
-アプリケーションで使用するアクションをリトアップした JSON ファイルである [Action Manifest](https://github.com/ValveSoftware/openvr/wiki/Action-manifest) を作成します。
-直接 JSON ファイルを作成してもよいですが、SteamVR Plugin には Action Manifest を GUI 上で作れる機能があるので、今回はこれを使います。
+SteamVR Input では、あらかじめアプリ側で使用するアクションを作成しておき、SteamVR Input の設定画面でボタンやトリガー等とアクションを関連付けることで、アプリを操作します。
+プラットフォームレベルで用意されたキーコンフィグのようなイメージです。
+
+まず、アプリケーションで使用するアクションを JSON 形式でリトアップした [Action Manifest](https://github.com/ValveSoftware/openvr/wiki/Action-manifest) を作成します。
+SteamVR Plugin には Action Manifest を簡単に作れる機能があるので、これを使います。
 
 ### Action Manifest の生成
-Unity のメニューから Window > SteamVR Input を選択します。
+Unity のメニューから **Window > SteamVR Input** を選択します。
 ![](/images/menu-steamvr-input.png)
 
-Action Manifest のサンプルファイルを使用するか聞かれますが、今回は一から作成するので No を選択します。
+初回起動時に Action Manifest のサンプルファイルを使用するか聞かれます。
+今回は一から作成するので **No** を選択します。
 ![](/images/create-default-actionmanifest.png)
 
-アクションセット名を Watch に変更し、その下のドロップダウンを per hand に変更します。
+アクションセット名を **Watch** に変更し、その下のドロップダウンを **per hand** に変更します。
 ![](/images/watch-action.png)
 
-下の方にある Actions の In というボックス内にある NewAction をクリックします。
-右側にアクションの詳細が表示されるので、Name を WakeUp に変更します。
-変更したら左下の Save and generate ボタンを押します。
+下の方にある **Actions** の **In** というボックス内にある **NewAction** の文字クリックします。
+右側にアクションの詳細が表示されるので、**Name** を **WakeUp** に変更します。これが時計を表示状態に切り替えるためのアクションになります。
+変更したら左下の **Save and generate** ボタンを押して Action Manifest を生成します。
 ![](/images/change-action-name.png)
 
 `StreamingAssets/SteamVR/actions.json` として Action Manifest が書き出されます。
@@ -60,50 +66,49 @@ Action Manifest のサンプルファイルを使用するか聞かれますが�
 ```
 
 ## デフォルトバインディングの設定
-右下の Open binding UI ボタンを押します。
+右下の **Open binding UI** ボタンを押します。
 ![](/images/open-binding-ui.png)
 
-Create New Binding をクリックします。
+VR のコントローラが表示されない場合は、HMD を SteamVR に接続されているか確認してください。
+
+**Create New Binding** をクリックします。
 ![](/images/create-new-binding.png)
 
-デフォルトで Y ボタンを押したら時計が表示されるように設定してみます。
-接続されているコントローラによってボタンが異なるので、お使いのコントローラに合わせて読み替えてください。
+Y ボタンを押したら時計が表示されるように設定します。
+接続されているコントローラによってボタンが異なるので、使用しているコントローラに合わせてボタンは変えてください。
 
-Y Button の + をクリック
+**Y Button** の **+** をクリック
 ![](/images/y-button-plus.png)
 
-BUTTON をクリック
+**BUTTON** をクリック
 ![](/images/button.png)
 
-Click の右の None を選択して、wakeup を割り当て。
+**Click** の右の **None** を選択して、**wakeup** を割り当てる。
 ![](/images/y-button-click.png)
 ![](/images/wakeup.png)
 
-チェックマークをクリックして確定
+左下のチェックマークをクリックして確定
 ![](/images/check-mark.png)
 
-右下の Replace Default Binding をクリック
+右下の **Replace Default Binding** をクリック
 ![](/images/replace-default-binding.png)
 
-Save をクリック
+**Save** をクリック
 ![](/images/save-binding.png)
 
-バインディングの設定画面を閉じます。
+右上の × ボタンでバインディングの設定ウィンドウを閉じます。
 Unity の SteamVR Input のウィンドウも閉じます。
-ダイアログが表示されるので Save をクリックします。
-![](/images/save.png)
-
-## アクションマニフェストパスの指定
-アプリケーションの開始時に Action Manifest パスを [SetActionManifestPath()](https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.CVRInput.html#Valve_VR_CVRInput_SetActionManifestPath_System_String_) で指定します。（詳細は [Wiki](https://github.com/ValveSoftware/openvr/wiki/SteamVR-Input#api-documentation) を参照）
-先ほど生成した actions.json が StreamingAssets に入っているので、そのパスを指定します。
 
 ### スクリプトの作成
-`Scripts/InputController.cs` を新規作成します。
-Hierarchy を右クリック > CreateEmpty して、オブジェクト名を `InputController` に変更します。
-`InputController.cs` を `InputController` へドラッグします。
+`Scripts` フォルダの下に `InputController.cs` を新規作成します。
+Hierarchy を**右クリック > CreateEmpty** して、オブジェクト名を `InputController` に変更します。
+Project ウィンドウから `InputController.cs` を `InputController` へドラッグしてスクリプトを追加します。
+このスクリプトにコントローラの入力関連の処理を書いていきます。
 ![](/images/add-input-controller.png)
 
-### アクションパスの指定
+### OpenVR の初期化、クリーンアップコードを追加
+`InputController.cs` を開き以下のコードをコピーします。
+OpenVR Input API を使うため、OpenVR の初期化をしておく必要があります。
 ```cs:InputController.cs
 using System;
 using UnityEngine;
@@ -114,12 +119,6 @@ public class InputController : MonoBehaviour
     private void Start()
     {
         OpenVRUtil.System.InitOpenVR();
-
-        var error = OpenVR.Input.SetActionManifestPath(Application.streamingAssetsPath + "/SteamVR/actions.json");
-        if (error != EVRInputError.None)
-        {
-            throw new Exception("Action Manifest パスの指定に失敗しました: " + error);
-        }
     }
 
     private void Destroy()
@@ -127,7 +126,35 @@ public class InputController : MonoBehaviour
         OpenVRUtil.System.ShutdownOpenVR();
     }
 }
+```
 
+## アクションマニフェストパスの指定
+アプリケーションの開始時に Action Manifest ファイルのパスを [SetActionManifestPath()](https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.CVRInput.html#Valve_VR_CVRInput_SetActionManifestPath_System_String_) で指定します。（詳細は [Wiki](https://github.com/ValveSoftware/openvr/wiki/SteamVR-Input#api-documentation) を参照）
+先ほど生成した **actions.json** が **StreamingAssets** に入っているので、そのパスを指定します。
+
+```diff cs:InputController.cs
+using System;
+using UnityEngine;
+using Valve.VR; 
+
+public class InputController : MonoBehaviour
+{
+    private void Start()
+    {
+        OpenVRUtil.System.InitOpenVR();
+
++       var error = OpenVR.Input.SetActionManifestPath(Application.streamingAssetsPath + "/SteamVR/actions.json");
++       if (error != EVRInputError.None)
++       {
++           throw new Exception("Action Manifest パスの指定に失敗しました: " + error);
++       }
+    }
+
+    private void Destroy()
+    {
+        OpenVRUtil.System.ShutdownOpenVR();
+    }
+}
 ```
 
 ## アクションセットハンドルの取得
