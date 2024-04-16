@@ -184,6 +184,7 @@ Overlay Viewer は SteamVR のインストールディレクトリに入って�
 ### オーバーレイの作成
 オーバーレイの作成は `CreateOverlay()` という関数を作って分けておきます。
 `key` と `name` を受け取って、オーバーレイハンドルを返します。
+関数に分ける際に、変数名を変えている部分があるので注意してください。
 
 ```diff cs:WatchOverlay.cs
 public class WatchOverlay : MonoBehaviour
