@@ -5,9 +5,12 @@ free: false
 
 ## 右手のコントローラに時刻を表示
 
+右手にも時計を表示できるようにします。
+
 ### 変数の作成
-`WatchOverlay.cs` に左右のどちらの手に表示するかを決める変数を作成します。
-`EtrackedControllerRole.LeftHand`, `ETrackedControllerRole.RightHand` が定義されているので、今回は `ETrackedControllerRole` 型を使います。
+時計を表示する `WatchOverlay.cs` に左右のどちらの手に表示するかを決める変数を作成します。
+OpenVR の [ETrackedControllerRole](https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.ETrackedControllerRole.html) 型に左手と右手を識別する定数が定義されているので、これを使うことにします。
+
 ```diff cs:WatchOverlay.cs
 public class WatchOverlay : MonoBehaviour
 {
@@ -20,23 +23,28 @@ public class WatchOverlay : MonoBehaviour
     ～省略～
 ```
 
-### コントローラの取得を修正
-`targetHand` のコントローラの Device Index を取得するように修正します。
+左手の値が`EtrackedControllerRole.LeftHand`
+右手の値が `ETrackedControllerRole.RightHand` です。
+
+### 選択中のコントローラの Device Index を取得
+左手固定の Device Index を取得するようになっているので、選択中のコントローラを取得するように修正します。
 
 ```diff cs:WatchOverlay.cs
 private void Update()
 {
--   var leftControllerIndex = OpenVR.System.GetTrackedDeviceIndexForControllerRole(ETrackedControllerRole.LeftHand);
-+   var controllerIndex = OpenVR.System.GetTrackedDeviceIndexForControllerRole(targetHand);
+    var position = new Vector3(x, y, z);
+    var rotation = Quaternion.Euler(rotationX, rotationY, rotationZ);
 
+-   var leftControllerIndex = OpenVR.System.GetTrackedDeviceIndexForControllerRole(ETrackedControllerRole.LeftHand);
 -   if (leftControllerIndex != OpenVR.k_unTrackedDeviceIndexInvalid)
-+   if (controllerIndex != OpenVR.k_unTrackedDeviceIndexInvalid)
-    {
-        var position = new Vector3(x, y, z);
-        var rotation = Quaternion.Euler(rotationX, rotationY, rotationZ);
+-   {
 -       Overlay.SetOverlayTransformRelative(overlayHandle, leftControllerIndex, position, rotation);
+-   }
++   var controllerIndex = OpenVR.System.GetTrackedDeviceIndexForControllerRole(targetHand);
++   if (controllerIndex != OpenVR.k_unTrackedDeviceIndexInvalid)
++   {
 +       Overlay.SetOverlayTransformRelative(overlayHandle, controllerIndex, position, rotation);
-    }
++   }
 
     Overlay.SetOverlayRenderTexture(overlayHandle, renderTexture);
 }
@@ -45,15 +53,32 @@ private void Update()
 `WatchOverlay` のインスペクタで、`Target Hand` を `Right Hand` に切り替えて、右手に時刻が表示されることを確認します。
 ![](/images/change-hand-inspector.png)
 
-ただし、左手のコントローラを基準にして位置を設定しているため、右手に表示した場合は、手のひら側に表示されます。
+ただし、左手のコントローラを基準にして位置を設定しているため、右手に表示した場合は、しっくりこない位置に時刻が表示されます。
 ![](/images/wrong-right-hand-position.jpg)
 
-### 右手用の座標を設定
-右手に切り替えたときに、ちょうどいい位置にオーバーレイが表示されるように位置を調整します。
-既存の設定値をコピーして、右手用の位置を指定するための変数を作ります。
+右手のちょうどいい位置にオーバーレイが表示されるように調整していきます
 
-左手用は変数名に left を追加します。
-左手と右手で size は同じとします。
+### 既存の設定値のメモ
+
+まず `WatchOverlay` のインスペクタを開き、`X, Y, Z, Rotation X, Rotation Y, Rotation Z` の値をメモしておきます。
+```
+左手用のメモ
+x = -0.044
+y = 0.015
+z = -0.131
+rotationX = 154
+rotationY = 262
+rotationZ = 0
+```
+
+### 左手用と右手用の変数を作成
+オーバーレイの位置と回転を設定しているメンバ変数 `x, y, z, rotationX, rotationY, rotationZ` を削除します。
+ただし `size` は左右で共通にするので、そのまま残します。
+
+代わりに左手用の `leftX, leftY, leftZ, leftRotationX, leftRotationY, leftRotationZ` と、右手用の `rightX, rightY, rightZ, rightRotationX, rightRotationY, rightRotationZ` を作ります。
+
+下記のコードを参考に変数を作ってください。
+
 ```diff cs:WatchOverlay.cs
 public class WatchOverlay : MonoBehaviour
 {
@@ -63,34 +88,42 @@ public class WatchOverlay : MonoBehaviour
 
     private ulong overlayHandle = OpenVR.k_ulOverlayHandleInvalid;
 
+    // size は残す
     [Range(0, 0.5f)] public float size;
--   [Range(-0.5f, 0.5f)] public float x;
--   [Range(-0.5f, 0.5f)] public float y;
--   [Range(-0.5f, 0.5f)] public float z;
+
+-   // 既存の変数は削除
+-   [Range(-0.2f, 0.2f)] public float x;
+-   [Range(-0.2f, 0.2f)] public float y;
+-   [Range(-0.2f, 0.2f)] public float z;
 -   [Range(0, 360)] public int rotationX;
 -   [Range(0, 360)] public int rotationY;
 -   [Range(0, 360)] public int rotationZ;
 
-+   [Range(-0.5f, 0.5f)] public float leftX;
-+   [Range(-0.5f, 0.5f)] public float leftY;
-+   [Range(-0.5f, 0.5f)] public float leftZ;
++   // 左手用の変数を追加
++   [Range(-0.2f, 0.2f)] public float leftX;
++   [Range(-0.2f, 0.2f)] public float leftY;
++   [Range(-0.2f, 0.2f)] public float leftZ;
 +   [Range(0, 360)] public int leftRotationX;
 +   [Range(0, 360)] public int leftRotationY;
 +   [Range(0, 360)] public int leftRotationZ;
 
-+   [Range(-0.5f, 0.5f)] public float rightX;
-+   [Range(-0.5f, 0.5f)] public float rightY;
-+   [Range(-0.5f, 0.5f)] public float rightZ;
++   // 右手用の変数を追加
++   [Range(-0.2f, 0.2f)] public float rightX;
++   [Range(-0.2f, 0.2f)] public float rightY;
++   [Range(-0.2f, 0.2f)] public float rightZ;
 +   [Range(0, 360)] public int rightRotationX;
 +   [Range(0, 360)] public int rightRotationY;
 +   [Range(0, 360)] public int rightRotationZ;
 
 ```
 
-targetHand に合わせて、それぞれの位置をセットするように変更します。
+### 対応する位置と角度をセット
+`targetHand` に合わせた位置に表示するように `Update()` を修正します。
 ```diff cs:WatchOverlay.cs
 private void Update()
 {
+-   var position = new Vector3(x, y, z);
+-   var rotation = Quaternion.Euler(rotationX, rotationY, rotationZ);
 +   Vector3 position;
 +   Quaternion rotation;
 +       
@@ -104,12 +137,10 @@ private void Update()
 +       position = new Vector3(rightX, rightY, rightZ);
 +       rotation = Quaternion.Euler(rightRotationX, rightRotationY, rightRotationZ);
 +   }
-+       
+   
     var controllerIndex = OpenVR.System.GetTrackedDeviceIndexForControllerRole(targetHand);
     if (controllerIndex != OpenVR.k_unTrackedDeviceIndexInvalid)
     {
--       var position = new Vector3(x, y, z);
--       var rotation = Quaternion.Euler(rotationX, rotationY, rotationZ);
         Overlay.SetOverlayTransformRelative(overlayHandle, controllerIndex, position, rotation);
     }
 
@@ -117,30 +148,16 @@ private void Update()
 }
 ```
 
-インスペクタで各座標と角度を入力します。
-左手用はメモした値を入力し、右手用は前回と同じようにプログラムを実行しながら、インスペクタでちょうどいい値に設定してください。
-```diff cs:WatchOverlay.cs
-private void Update()
-{
-    var controllerIndex = OpenVR.System.GetTrackedDeviceIndexForControllerRole(targetHand);
-    if (controllerIndex != OpenVR.k_unTrackedDeviceIndexInvalid)
-    {
--       var position = new Vector3(x, y, z);
--       var rotation = Quaternion.Euler(rotationX, rotationY, rotationZ);
-+       var position = new Vector3(rightX, rightY, rightZ);
-+       var rotation = Quaternion.Euler(rightRotationX, rightRotationY, rightRotationZ);
+### 右手用の表示位置の調整
+プログラムを実行して `WatchOveraly` のインスペクタを開きます。
+**Target Hand** が **Right Hand** になっているのを確認します。
 
-        Overlay.SetOverlayTransformRelative(overlayHandle, controllerIndex, position, rotation);
-    }
+右手用の変数のスライダーを使って、ちょうどいい座標と角度を決定します。
+![](/images/right-hand-params.png)
 
-    Overlay.SetOverlayRenderTexture(overlayHandle, renderTexture);
-}
-
+以下は設定値の例です。
 ```
-
-以下は右手に設定した値の例です。
-```
-右手用のパラメータ例
+右手用の設定値
 x = 0.04
 y = 0.003
 z = -0.107
@@ -149,18 +166,30 @@ rotationY = 258
 rotationZ = 179
 ```
 
-右手のちょうどいい位置に表示されていれば OK です。
 ![](/images/correct-right-hand.jpg)
 
-## ボタンのイベント作成
-ボタンのクリックイベントで、どちらのコントローラに表示するかを切り替えられるようにします。
-Scripts フォルダに `WatchSettingController.cs` を新規作成します。
-Hierarchy を右クリックして Create Empty でからのオブジェクトを作成し、`SettingController` という名前に変更します。
+ちょうどいい位置に表示できたら、前回と同じように `WatchOverlay` コンポーネントを**右クリック > Copy Component** で値をコピーします。
+![](/images/copy-component-righthand.png)
+
+プログラムを終了して、再度**右クリック > Paste Component Values** で値をペーストします。
+左手用には、先ほどメモしておいた値を入力します。
+**Target Hand** の初期値を **Left Hand** に戻しておきます。
+
+![](/images/controller-params.png)
+
+これで、右手用と左手用の位置の調整が完了です。
+
+## ボタンが押されたときの処理を作成
+設定画面のボタンを押して、コントローラを切り替えられるようにします。
+`Scripts` フォルダに `WatchSettingController.cs` を新規作成します。
+設定画面のボタンが押されたときの処理を、このスクリプトに書いていきます。
+
+Hierarchy を**右クリック > Create Empty** で空のオブジェクトを作成し、`SettingController` という名前に変更します。
 作成した `SettingController` オブジェクトに `WatchSettingController.cs` を追加します。
 ![](/images/add-watch-controller.png)
 
 
-`WatchSettingController` に `WatchOverlay` の変数を作成します。
+`WatchSettingController.cs` を開き、下のコードをコピーします。
 ```cs:WatchSettingController.cs
 using UnityEngine;
 
@@ -170,10 +199,10 @@ public class WatchSettingController : MonoBehaviour
 }
 ```
 
-インスペクタから `WatchOverlay` コンポーネントの Watch Overlay にドラッグします。
+`SettingController` のインスペクタを開き、`WatchOverlay` を `Watch Overlay` にドラッグします。
 ![](/images/attach-watch-overlay.png)
 
-`WatchSettingController.cs` に、ボタンが押されたときのイベントを定義します。
+`WatchSettingController.cs` に、ボタンが押されたときのイベントを追加します。
 ```diff cs:WatchSettingController.cs
 using UnityEngine;
 + using Valve.VR;
@@ -184,34 +213,43 @@ public class WatchSettingController : MonoBehaviour
     
 +   public void OnLeftHandButtonClick()
 +   {
++       // Left Hand ボタンが押されたら左手に変更
 +       watchOverlay.targetHand = ETrackedControllerRole.LeftHand;
 +   }
 +
 +   public void OnRightHandButtonClick()
 +   {
++       // Right Hand ボタンが押されたら右手に変更
 +       watchOverlay.targetHand = ETrackedControllerRole.RightHand;
 +   }
 }
 ```
 
 ## ボタンにイベントを割り当て
-Hierarchy の Dashboard > Canvas > LeftHandButton を選択します。
-インスペクタで `Button` コンポーネントの `OnClick()` の + をクリックします。
-`SettingController` を OnClick へドラッグして、`WatchSettingController.OnLeftHandButtonClick()` を設定します。
+Hierarchy の `Dashboard > Canvas > LeftHandButton` オブジェクトを選択します。
+インスペクタで `Button` コンポーネントの `OnClick()` の `+` をクリックします。
+`SettingController` を `OnClick()` の `None (Object)` へドラッグして `WatchSettingController.OnLeftHandButtonClick()` を設定します。
 ![](/images/attach-left-button-event.png)
+
+これで uGUI のボタンが押されたときに `SettingController.OnLeftHandButtonClick()` が呼ばれます。
 
 同様に `RightHandButton` の `OnClick()` に `WatchSettingController.OnRightHandButtonClick()` を設定します。
 ![](/images/attach-right-hand-event.png)
 
-
 ## ダッシュボードのイベント取得
-ダッシュボードでボタンがクリックされたイベントを取得します。
-オーバーレイのイベントは `PollNextOverlayEvent()` を使ったポーリングで検出します。（詳細は [Wiki](https://github.com/ValveSoftware/openvr/wiki/IVROverlay::PollNextOverlayEvent) を参照）
+このままではダッシュボード上でボタンをクリックしても何も起こりません。
+今設定したのはあくまで Unity 側のイベントになります。
+
+OpenVR 側のイベントと Unity 側のイベントは別になっているので、ダッシュボードオーバーレイがクリックされたときに、OpenVR から Unity へイベントを繋ぎこむ必要があります。
+
+まず、OpenVR 側でダッシュボードのボタンがクリックされたイベントを取得します。
+オーバーレイのイベントは `PollNextOverlayEvent()` を使ったポーリングで検出します。（詳細は [Wiki](https://github.com/ValveSoftware/openvr/wiki/IVROverlay::PollNextOverlayEvent) をn参照）
 
 `Update()` 内で `PollNextOverlayEvent()` を使ってダッシュボードオーバーレイで発生したイベントを監視します。
-指定したオーバーレイでイベントが発生していれば、`PollNextOverlayEvent()` の戻り値が true になり、発生したイベントを一つ取り出すことができます。
-全てのイベントを取り出すと、false が返ってきます。
+指定したオーバーレイでイベントが発生していれば、`PollNextOverlayEvent()` の戻り値が `true` になり、発生したイベントを一つ取り出されます。
+全てのイベントを取り出すと、戻り値が `false` になります。
 
+`DashboardOverlay.cs` の `Update()` 内にイベントの検出処理を追加します。
 ```diff cs:DashboardOverlay.cs
 void Update()
 {
@@ -230,11 +268,12 @@ void Update()
 }
 ```
 
-uncbVREvent は [VREvent_t](https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.VREvent_t.html) 構造体のサイズ（バイト数）です。
+イベントは [VREvent_t](https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.VREvent_t.html) 型で取得されます。（詳細は [Wiki](https://github.com/ValveSoftware/openvr/wiki/VREvent_t) を参照）
+`uncbVREvent` は [VREvent_t](https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.VREvent_t.html) 型の構造体のサイズ（バイト数）です。
 
 
 ## クリックイベントの取得
-レーザーポインタでダッシュボードがクリックされると `EVREventType.VREvent_MouseButtonDown` と `EVREventType.VREvent_MouseButtonUP` が発生します。
+レーザーポインタでダッシュボードオーバーレイがクリックされると `EVREventType.VREvent_MouseButtonDown` と `EVREventType.VREvent_MouseButtonUp` が発生します。
 その他のイベントは [EVREventType](https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.EVREventType.html) に定義されています。（詳細は [Wiki](https://github.com/ValveSoftware/openvr/wiki/VREvent_t) を参照）
 
 試しに `EVREventType.VREvent_MouseButtonDown` と `EVREventType.VREvent_MouseButtonUp` を取得してみます。
@@ -247,13 +286,13 @@ private void Update()
 
     while (OpenVR.Overlay.PollNextOverlayEvent(overlayHandle, ref vrEvent, uncbVREvent))
     {
-+       switch (vrEvent.eventType)
++       switch ((EVREventType)vrEvent.eventType)
 +       {
-+           case (uint)EVREventType.VREvent_MouseButtonDown:
++           case EVREventType.VREvent_MouseButtonDown:
 +               Debug.Log("MouseDown");
 +               break;
 +
-+           case (uint)EVREventType.VREvent_MouseButtonUp:
++           case EVREventType.VREvent_MouseButtonUp:
 +               Debug.Log("MouseUp");
 +               break;
 +       }
@@ -261,12 +300,27 @@ private void Update()
 }
 ```
 
-`vrEvent.eventType` は uint 型でイベントコードが入っているので、EVREventType を uint にキャストして比較しています。
+`vrEvent.eventType` は `uint` 型でイベントコードが入っているので、`EVREventType` にキャストして比較しています。
 プログラムを実行して、ダッシュボードのボタンをクリックすると、"MouseDown" と "MouseUp" がコンソールに出力されます。
 
 ![](/images/mouse-up-console.png)
 ![](/images/click-dashboard.jpg)
-*オーバーレイのどこをクリックしてもイベントが発生する*
+*マウスポインタをオーバーレイに合わせてクリック*
+
+:::details EVREventType.VREvent_MouseClick は？
+ありません。
+
+OpenVR のマウスイベントは `MouseButtonDown`, `MouseButtonUp`, `MousMove` の 3 つです。
+OnClick を作るなら MouseDown と MouseUp を組み合わせて「MouseUp 発生時に MouseDown 発生時と同じ要素にマウスが乗っていたらクリックしたとする」といったような処理を作る必要があります。
+
+OnMouseEnter、OnMouseLeave、OnDrag なども上の 3 つを組み合わせて作ります。
+スライダーなどを作ろうとすると Unity で作るよりもやることが多いです。
+
+:::details もっと簡単に作りたいな...
+いいニュースがあります。
+ドラッグ＆ドロップで構築できるオシャレなダッシュボード用 UI アセットを Asset Store で販売予定なので、乞うご期待。
+:::
+
 
 ## クリック座標の取り出し
 クリックされた座標をイベントから取得します。
@@ -299,33 +353,29 @@ private void Update()
 }
 ```
 
-vrEvent には VREvent_Mouse_T 型でクリックされたマウスの座標が渡されます。
-座標はオーバーレイの UV 座標で返され、左上が (0, 0)、右下が (1, 1) となります。
+`vrEvent` には [VREvent_Mouse_t](https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.VREvent_Mouse_t.html?q=VREvent_Mouse_t) 型でマウスの座標がセットされています。
+マウス座標は UV 座標でセットされ、x, y ともに 0 ~ 1 の範囲の値となります。
 
-プログラムを実行して、ダッシュボード開き、レーザポインタでオーバーレイをクリックしてください。
-クリックされた座標がコンソールに表示されるはずです。
+プログラムを実行して、ダッシュボード開き、レーザポインタでオーバーレイをクリックしてください。マウスの座標がコンソールに表示されます。
 ![](/images/click-uv-position.png)
 
 ## Mouse Scaling Factor の適用
-受け取ったマウス座標はデフォルトで UV 座標になっていますが、Mouse Scaling Factor を設定すると、実際の UI の座標（ピクセル数）で受け取ることができます。
-Mouse Scaling Factor は [SetOverlayMouseScale()](https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.CVROverlay.html#Valve_VR_CVROverlay_SetOverlayMouseScale_System_UInt64_Valve_VR_HmdVector2_t__) で設定します。（詳細は Wiki を参照）
+受け取ったマウス座標は 0 ~ 1 の UV 座標になっていますが、**Mouse Scaling Factor** を設定すると、実際の UI の座標（ピクセル数）で受け取ることができます。
+Mouse Scaling Factor は [SetOverlayMouseScale()](https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.CVROverlay.html#Valve_VR_CVROverlay_SetOverlayMouseScale_System_UInt64_Valve_VR_HmdVector2_t__) で設定します。（詳細は [Wiki](https://github.com/ValveSoftware/openvr/wiki/IVROverlay::SetOverlayMouseScale) を参照）
 
+`DashboardOveraly.cs` の `Start()` に Mouse Scaling Factor の設定を追加します。
 ```diff cs:DashboardOverlay.cs
 private void Start()
 {
     OpenVRUtil.System.InitOpenVR();
 
-    var error = OpenVR.Overlay.CreateDashboardOverlay("WatchDashboardKey", "Watch Setting", ref dashboardHandle, ref thumbnailHandle);
-    if (error != EVROverlayError.None)
-    {
-        throw new Exception("ダッシュボード‐バーレイの作成に失敗しました: " + error);
-    }
+    (dashboardHandle, thumbnailHandle) = Overlay.CreateDashboardOverlay("WatchDashboardKey", "Watch Setting");
 
     var filePath = Application.streamingAssetsPath + "/sns-icon.jpg";
     Overlay.SetOverlayFromFile(thumbnailHandle, filePath);
 
-    Overlay.SetOverlaySize(dashboardHandle, 2.5f);
     Overlay.FlipOverlayVertical(dashboardHandle);
+    Overlay.SetOverlaySize(dashboardHandle, 2.5f);
 
 +   var mouseScalingFactor = new HmdVector2_t()
 +   {
@@ -341,6 +391,7 @@ private void Start()
 ```
 
 `mouseScalingFacor` の `v0` が幅、`v1` が高さです。
+OpenVR でマウスイベントが発生した際に、マウスの UV 座標にこの値が掛け算されて、実際の UI の座標に合わせた座標で受け取れます。
 
 プログラムを実行して、ダッシュボードをクリックしてください。
 クリックされた座標が (0, 0) ～ (1024, 768) にスケーリングされた座標で取得できるようになります。
@@ -350,20 +401,20 @@ private void Start()
 ## Overlay Viewer でのイベント確認
 ちなみに Overlay Viewer でもマウスイベントを発行できます。
 
-プログラムの実行後、Overlay Viewer を起動して、左側の一覧から `WatchDashboardKey` を選択します。
-右下の "Mouse Capture" にチェックを入れた状態で、右側のオーバーレイをクリックすると、イベントが発生して Unity のコンソールにログが表示されます。
+プログラムの実行後、Overlay Viewer を起動して、一覧から `WatchDashboardKey` を選択します。
+右下の **Mouse Capture** にチェックを入れた状態で、プレビューをクリックすると、マウスイベントが発生して Unity のコンソールにログが表示されます。
 ![](/images/overlay-viewer-event.png)
 
 
-HMD を被らずにイベントの動作確認をするときには Overlay Viewer が便利です。
+HMD を被らずにイベントの動作確認をするときには Overlay Viewer を使うと便利です。
 
-## クリックされた要素を取得する
 
-マウスイベントの座標から、どのボタンがクリックされたのかを判定します。
-Canvas の [Graphic Raycaster](https://docs.unity3d.com/Packages/com.unity.ugui@1.0/api/UnityEngine.UI.GraphicRaycaster.html) を使って、クリックされた座標の要素を取得します。
+## クリックされたボタンを判定する
+マウスイベントの座標から、Unity 側のどのボタンがクリックされたのかを判定します。
+Canvas の [Graphic Raycaster](https://docs.unity3d.com/Packages/com.unity.ugui@1.0/api/UnityEngine.UI.GraphicRaycaster.html) を使って、クリックされた座標にある要素を取得します。
 
 ### Graphic Raycaster を取得
-GraphicRaycaster の変数を追加します。
+`DashboardOverlay.cs` に `GraphicRaycaster` の変数を追加します。
 ```diff cs:DashboardOverlay.cs
 using UnityEngine;
 using Valve.VR;
@@ -382,30 +433,35 @@ public class DashboardOverlay : MonoBehaviour
     ～省略～
 ```
 
-Hierarchy で `Dashboard/Canvas` を `DashboardOverlay` の `GraphicRaycaster` へドラッグします。
-インスペクタから GraphicRaycaster に Canvas をドラッグして設定します。
+Hierarchy で `Dashboard > DashboardOverlay` オブジェクトをクリックしてインスペクタを開きます。
+`GraphicRaycaster` 変数に `Dashboard > Canvas` を設定します。
 ![](/images/drag-graphic-raycaster.png)
 
 ### 検出用のメソッドを作成
+`DashboardOverlay.cs` に、指定された座標にあるボタンを返すメソッドを追加します。
+
 ```diff cs:DashboardOverlay.cs
 private void OnDestroy()
 {
     OpenVRUtil.System.ShutdownOpenVR();
 }
 
-+ private Button GetButtonByPosition(float x, float y)
++ private Button GetButtonByPosition(Vector2 position)
 + {
-+    //  から Button を探して返す
++    // 座標 position.x, position.y にあるボタンを返す
++    // ボタンがなければ null を返す
++    return null;
 + }
 
 ～省略～
 ```
 
-引数はマウスがクリックされた座標で、`vrEvent.data.mouse.x` と `vrEvent.data.mouse.y` をを渡します。
-戻り値は、今回は Button のみを使った UI なので Button にします。
+今回は `Button` のみを使った UI なので `Button` に限定して処理を作成します。
 
-### EventSystem と PointerEventData の準備
-Graphic Raycaster に渡すための EventSystem と PointerEventData を準備します。
+## EventSystem の追加
+`GraphicRaycaster` に渡す座標は Unity 側の UI イベントを仕切っている [EventSystem](https://docs.unity3d.com/Packages/com.unity.ugui@1.0/manual/EventSystem.html) の [PointerEventData](https://docs.unity3d.com/Packages/com.unity.ugui@1.0/api/UnityEngine.EventSystems.PointerEventData.html) クラスで渡します。
+OpenVR から受け取ったマウス座標で `PointerEventData` を作るために、まずは `DashboardOverlay.cs` に `EventSystem` を保存する変数を追加します。
+
 ```diff cs:DashboardOverlay.cs
 using UnityEngine;
 using Valve.VR;
@@ -426,19 +482,31 @@ public class DashboardOverlay : MonoBehaviour
 
     ～省略～
 
-    private Button GetButtonByPosition(float x, float y)
-    {
-+       var pointerEventData = new PointerEventData(eventSystem);
-+       pointerEventData.position = new Vector2(x, y);
-    }
 ```
 
-Hierarchy で `EventSystem` を `DashboardOverlay` の `EventSystem` にドラッグします。
+Hierarchy で `Dashboard > DashboardOverlay` のインスペクタを開きます。
+`EventSystem` オブジェクトを `Event System` 変数にドラッグします。
 ![](/images/drag-event-system.png)
 
 
+### PointerEventData の作成
+追加した `EventSystem` を使って、`PointerEventData` を作成します。
+`GetButtonByPosition()` 内で `position` から `PointerEventData` を作成します。
+
+```diff cs:DashboardOverlay.cs
+private Button GetButtonByPosition(Vector2 position)
+{
++   var pointerEventData = new PointerEventData(eventSystem);
++   pointerEventData.position = position;
+    return null;
+}
+```
+
+`PointerEventData` クラスのコンストラクタに `EventSystem` を渡します。
+
+
 ### GraphicRaycaster で Button を取得する
-[GraphicRaycaster.Raycast()](https://docs.unity3d.com/Packages/com.unity.ugui@1.0/api/UnityEngine.UI.GraphicRaycaster.html#UnityEngine_UI_GraphicRaycaster_Raycast_UnityEngine_EventSystems_PointerEventData_System_Collections_Generic_List_UnityEngine_EventSystems_RaycastResult__) で、クリック座標の要素を取得し、Button があれば返すようにします。
+作成した `PointerEventData` を [GraphicRaycaster.Raycast()](https://docs.unity3d.com/Packages/com.unity.ugui@1.0/api/UnityEngine.UI.GraphicRaycaster.html#UnityEngine_UI_GraphicRaycaster_Raycast_UnityEngine_EventSystems_PointerEventData_System_Collections_Generic_List_UnityEngine_EventSystems_RaycastResult__) に渡して、クリック座標にある要素を探し、`Button` があれば返すようにします。
 
 
 ```diff cs:DashboardOverlay.cs
@@ -457,32 +525,39 @@ public class DashboardOverlay : MonoBehaviour
     public GraphicRaycaster graphicRaycaster;
     public EventSystem eventSystem;
 
-    private Button GetButtonByPosition(float x, float y)
+    ～省略～
+
+    private Button GetButtonByPosition(Vector2 position)
     {
         var pointerEventData = new PointerEventData(eventSystem);
-        pointerEventData.position = new Vector2(x, y);
+        pointerEventData.position = position;
 
-+       // マウス座標にある要素を取得
-+       var resultList = new List<RaycastResult>();
++       // 見つかった要素を保存するリスト
++       var raycastResultList = new List<RaycastResult>();
++
++       // pointerEventData の座標にある UI 要素を探して raycastList に保存
 +       graphicRaycaster.Raycast(pointerEventData, raycastResultList);
 +
-+       // 取得した要素から Button コンポーネントを持つゲームオブジェクトを返す
++       // リストからボタンだけを取り出す
 +       var raycastResult = raycastResultList.Find(element => element.gameObject.GetComponent<Button>());
++
++       // ボタンが無かったら null を返す
 +       if (raycastResult.gameObject == null)
 +       {
-+           // Button がなければ null を返す
 +           return null;
 +       }
 +
-+       // 見つかった Button を返す
++       // ボタンがあったら返す
 +       return raycastResult.gameObject.GetComponent<Button>();
     }
 ```
 
+これで座標からボタンを探す処理は完成です。
+
 ### 検出処理の呼び出し
-今回はシンプルに MouseDown されたボタンをクリックするようにします。
-MouseUp のイベント処理は不要なので削除します。
-MouseDown のイベント処理にクリックされたボタンの取得を追加します。
+OpenVR のクリックイベントを取得したら、マウス座標を取り出して、今作成した `GetButtonByPosition` に渡します。
+OpenVR にクリックイベントは無いので、今回は `MouseDown` でボタンを押すようにします。
+
 ```diff cs:DashboardOverlay.cs
 void Update()
 {
@@ -494,13 +569,14 @@ void Update()
     {
         switch (vrEvent.eventType)
         {
+-           // MouseUp イベントは使わないので削除
 -           case (uint)EVREventType.VREvent_MouseButtonDown:
 -               Debug.Log($"MouseDown: ({vrEvent.data.mouse.x}, {vrEvent.data.mouse.y})");
 -               break;
 
             case (uint)EVREventType.VREvent_MouseButtonUp:
 -               Debug.Log($"MouseUp: ({vrEvent.data.mouse.x}, {vrEvent.data.mouse.y})");
-+               var button = GetButtonByPosition(vrEvent.data.mouse.x, vrEvent.data.mouse.y);
++               var button = GetButtonByPosition(new Vector2(vrEvent.data.mouse.x, vrEvent.data.mouse.y));
 +               Debug.Log(button);
                 break;
         }
@@ -514,13 +590,13 @@ void Update()
 ![](/images/button-click-log.png)
 
 ## クリック座標の上下を反転させる
-クリックしたボタンと逆のボタンが取得されているのは、マウスクリック時に通知される座標系の Y 軸の上下がオーバーレイと Unity の Canvas で逆になっているためです。
+クリックしたボタンと逆のボタンが取得されているのは、マウスクリック時に通知される UV 座標系の V 軸 (Y軸)の上下がオーバーレイと Unity の Canvas で逆になっているためです。
 
-OpenVR Overlay のマウスイベントは、オーバーレイの左下を (0, 0) として返すようになっており、Unity と一致しています。
-しかし、前のページで DirectX のテクスチャを上下反転して表示させるために使用した `SetOverlayTextureBounds()` の影響によって、通知される座標の上下も逆になっています。
-（オーバーレイの左上をクリックすると (0, 0) が返ってくる状態になっています。）
+OpenVR Overlay のマウスイベントは、左下を (0, 0) として返すようになっており、本来 Unity と一致しています。
+しかし、オーバーレイを表示するときに DirectX のテクスチャが上下反転する問題の対策として使用した `SetOverlayTextureBounds()` の影響によって、OpenVR から通知される UV 座標の上下も逆になっています。
+（デフォルトでは左下を原点として返すところを、逆さまにしたため左上が原点として返ってくる状態になっている状態。）
 
-このチュートリアルでは DirectX のテクスチャを使用し、必ず `SetOerlayTextureBounds()` を使ってテクスチャの上下を反転させているという前提の元、クリックされたマウス座標の Y 軸をイベント処理内で反転させます。
+このチュートリアルでは必ず DirectX を使用され、必ず `SetOerlayTextureBounds()` を使ってテクスチャの上下を反転させるという前提の元、クリックされたマウス座標の V 軸 (Y軸) をイベント処理内で反転させます。
 ```diff cs:DashboardOverlay.cs
 void Update()
 {
@@ -534,7 +610,7 @@ void Update()
         {
             case (uint)EVREventType.VREvent_MouseButtonUp:
 +               vrEvent.data.mouse.y = renderTexture.height - vrEvent.data.mouse.y;
-                var button = GetButtonByPosition(vrEvent.data.mouse.x, vrEvent.data.mouse.y);
+                var button = GetButtonByPosition(new Vector2(vrEvent.data.mouse.x, vrEvent.data.mouse.y));
                 Debug.Log(button);
                 break;
         }
@@ -546,11 +622,9 @@ void Update()
 ![](/images/correct-button-log.png)
 
 
-※ DirectX 以外に対応させる場合や、`SetOverlayTextureBounds()` を使わない場合は、それぞれ適切に処理してください。
-
-
-## ボタンのクリックで左右のコントローラ表示を入れ替え
-これでクリックされたボタンを取得できたので、そのボタンに設定された OnClick() を実行します。
+## ボタンクリックで左右のコントローラ表示を入れ替え
+これでクリックされたボタンを取得できたので、あとは左右のコントローラの切り替えだけです。
+既に Unity のインスペクタ上で各 `Button` の `onClick` に切り替え処理を割り当て済みなので、それを呼び出すだけです。
 
 ```diff cs:DashboardOverlay.cs
 void Update()
@@ -565,7 +639,7 @@ void Update()
         {
             case (uint)EVREventType.VREvent_MouseButtonUp:
                 vrEvent.data.mouse.y = renderTexture.height - vrEvent.data.mouse.y;
-                var button = GetButtonByPosition(vrEvent.data.mouse.x, vrEvent.data.mouse.y);
+                var button = GetButtonByPosition(new Vector2(vrEvent.data.mouse.x, vrEvent.data.mouse.y));
 -               Debug.Log(button);
 +               if (button != null)
 +               {
@@ -578,7 +652,8 @@ void Update()
 
 ```
 
-プログラムを実行してダッシュボードを開き、ボタンをクリックすると、左右どちらの手に時計を表示するか設定できるようになっていることを確認します。
+プログラムを実行してダッシュボードを開き、ボタンをクリックしてください。
+どちらの手に設定するか切替ら得るようになっていれば OK です。
 ![](/images/switch-hand.gif)
 
 これでダッシュボードオーバーレイの作成と、左右コントローラの切り替えは完了です。
@@ -588,7 +663,6 @@ void Update()
 
 ### Mouse Scaling Factor の設定
 Mouse Scaling Factor の設定を `SetOverlayMouseScale()` として関数に分けておきます。
-これはマウスイベントの座標が 0 ~ 1 で返ってくるところを、実際の UI のピクセル数に合わせた座標で返すための処理です。
 
 ```diff cs:OpenVRUtil.cs
 ～省略～
@@ -653,7 +727,7 @@ private void Start()
 -   {
 -       throw new Exception("マウススケールの設定に失敗しました: " + error);
 -   }
-+   Overlay.SetoverlayMouseScale(dashboardHandle, renderTexture.width, renderTexture.height);
++   Overlay.SetOverlayMouseScale(dashboardHandle, renderTexture.width, renderTexture.height);
 }
 ```
 
@@ -684,82 +758,61 @@ void Update()
 +  ProcessOverlayEvents();
 }
 
-private void OnApplicationQuit()
-{
-    Overlay.DestroyOverlay(dashboardHandle);
-    Overlay.DestroyOverlay(thumbnailHandle);
-}
+～省略～
 
-private void OnDestroy()
-{
-    OpenVRUtil.System.ShutdownOpenVR();
-}
-
-private void ProcessOverlayEvents()
-{
-    var vrEvent = new VREvent_t();
-    var uncbVREvent = (uint)System.Runtime.InteropServices.Marshal.SizeOf(typeof(VREvent_t));
-    while (OpenVR.Overlay.PollNextOverlayEvent(dashboardHandle, ref vrEvent, uncbVREvent))
-    {
-        switch (vrEvent.eventType)
-        {
-            case (uint)EVREventType.VREvent_MouseButtonUp:
-                vrEvent.data.mouse.y = renderTexture.height - vrEvent.data.mouse.y;
-                var button = GetButtonByPosition(vrEvent.data.mouse.x, vrEvent.data.mouse.y);
-                if (button != null)
-                {
-                    button.onClick.Invoke();
-                }
-                break;
-        }
-    }
-}
++ private void ProcessOverlayEvents()
++ {
++     var vrEvent = new VREvent_t();
++     var uncbVREvent = (uint)System.Runtime.InteropServices.Marshal.SizeOf(typeof(VREvent_t));
++     while (OpenVR.Overlay.PollNextOverlayEvent(dashboardHandle, ref vrEvent, uncbVREvent))
++     {
++         switch (vrEvent.eventType)
++         {
++             case (uint)EVREventType.VREvent_MouseButtonUp:
++                 vrEvent.data.mouse.y = renderTexture.height - vrEvent.data.mouse.y;
++                 var button = GetButtonByPosition(new Vector2(vrEvent.data.mouse.x, vrEvent.data.mouse.y));
++                 if (button != null)
++                 {
++                     button.onClick.Invoke();
++                 }
++                 break;
++         }
++     }
++ }
 
 private Button GetButtonByPosition(float x, float y)
 {
-    var raycastResultList = new List<RaycastResult>();
-    var pointerEventData = new PointerEventData(eventSystem);
-    pointerEventData.position = new Vector2(x, y);
-    
-    graphicRaycaster.Raycast(pointerEventData, raycastResultList);
-    var raycastResult = raycastResultList.Find(element => element.gameObject.GetComponent<Button>());
-    if (raycastResult.gameObject == null)
-    {
-        return null;
-    }
-    return raycastResult.gameObject.GetComponent<Button>();
-}
+    ～省略～
 ```
 
 
 ### 最終的なコード
 
 ```cs:WatchOverlay.cs
-using System;
 using UnityEngine;
 using Valve.VR;
+using System;
 using OpenVRUtil;
 
 public class WatchOverlay : MonoBehaviour
 {
     public Camera camera;
     public RenderTexture renderTexture;
-    public ETrackedControllerRole targetHand = ETrackedControllerRole.RightHand;
-
+    public ETrackedControllerRole targetHand = ETrackedControllerRole.LeftHand;
     private ulong overlayHandle = OpenVR.k_ulOverlayHandleInvalid;
 
     [Range(0, 0.5f)] public float size;
 
-    [Range(-0.5f, 0.5f)] public float leftX;
-    [Range(-0.5f, 0.5f)] public float leftY;
-    [Range(-0.5f, 0.5f)] public float leftZ;
+    [Range(-0.2f, 0.2f)] public float leftX;
+    [Range(-0.2f, 0.2f)] public float leftY;
+    [Range(-0.2f, 0.2f)] public float leftZ;
     [Range(0, 360)] public int leftRotationX;
     [Range(0, 360)] public int leftRotationY;
     [Range(0, 360)] public int leftRotationZ;
 
-    [Range(-0.5f, 0.5f)] public float rightX;
-    [Range(-0.5f, 0.5f)] public float rightY;
-    [Range(-0.5f, 0.5f)] public float rightZ;
+    [Range(-0.2f, 0.2f)] public float rightX;
+    [Range(-0.2f, 0.2f)] public float rightY;
+    [Range(-0.2f, 0.2f)] public float rightZ;
     [Range(0, 360)] public int rightRotationX;
     [Range(0, 360)] public int rightRotationY;
     [Range(0, 360)] public int rightRotationZ;
@@ -768,7 +821,7 @@ public class WatchOverlay : MonoBehaviour
     {
         OpenVRUtil.System.InitOpenVR();
         overlayHandle = Overlay.CreateOverlay("WatchOverlayKey", "WatchOverlay");
-        
+
         Overlay.FlipOverlayVertical(overlayHandle);
         Overlay.SetOverlaySize(overlayHandle, size);
         Overlay.ShowOverlay(overlayHandle);
@@ -789,7 +842,7 @@ public class WatchOverlay : MonoBehaviour
             position = new Vector3(rightX, rightY, rightZ);
             rotation = Quaternion.Euler(rightRotationX, rightRotationY, rightRotationZ);
         }
-        
+
         var controllerIndex = OpenVR.System.GetTrackedDeviceIndexForControllerRole(targetHand);
         if (controllerIndex != OpenVR.k_unTrackedDeviceIndexInvalid)
         {
@@ -803,7 +856,7 @@ public class WatchOverlay : MonoBehaviour
     {
         Overlay.DestroyOverlay(overlayHandle);
     }
-    
+
     private void OnDestroy()
     {
         OpenVRUtil.System.ShutdownOpenVR();
@@ -826,24 +879,24 @@ public class DashboardOverlay : MonoBehaviour
     public RenderTexture renderTexture;
     public GraphicRaycaster graphicRaycaster;
     public EventSystem eventSystem;
-    
     private ulong dashboardHandle = OpenVR.k_ulOverlayHandleInvalid;
     private ulong thumbnailHandle = OpenVR.k_ulOverlayHandleInvalid;
 
     private void Start()
     {
         OpenVRUtil.System.InitOpenVR();
+
         (dashboardHandle, thumbnailHandle) = Overlay.CreateDashboardOverlay("WatchDashboardKey", "Watch Setting");
 
         var filePath = Application.streamingAssetsPath + "/sns-icon.jpg";
         Overlay.SetOverlayFromFile(thumbnailHandle, filePath);
 
-        Overlay.SetOverlaySize(dashboardHandle, 2.5f);
         Overlay.FlipOverlayVertical(dashboardHandle);
+        Overlay.SetOverlaySize(dashboardHandle, 2.5f);
         Overlay.SetOverlayMouseScale(dashboardHandle, renderTexture.width, renderTexture.height);
     }
 
-    void Update()
+    private void Update()
     {
         Overlay.SetOverlayRenderTexture(dashboardHandle, renderTexture);
         ProcessOverlayEvents();
@@ -852,7 +905,6 @@ public class DashboardOverlay : MonoBehaviour
     private void OnApplicationQuit()
     {
         Overlay.DestroyOverlay(dashboardHandle);
-        Overlay.DestroyOverlay(thumbnailHandle);
     }
 
     private void OnDestroy()
@@ -870,7 +922,7 @@ public class DashboardOverlay : MonoBehaviour
             {
                 case (uint)EVREventType.VREvent_MouseButtonUp:
                     vrEvent.data.mouse.y = renderTexture.height - vrEvent.data.mouse.y;
-                    var button = GetButtonByPosition(vrEvent.data.mouse.x, vrEvent.data.mouse.y);
+                    var button = GetButtonByPosition(new Vector2(vrEvent.data.mouse.x, vrEvent.data.mouse.y));
                     if (button != null)
                     {
                         button.onClick.Invoke();
@@ -880,13 +932,14 @@ public class DashboardOverlay : MonoBehaviour
         }
     }
     
-    private Button GetButtonByPosition(float x, float y)
+    private Button GetButtonByPosition(Vector2 position)
     {
-        var raycastResultList = new List<RaycastResult>();
         var pointerEventData = new PointerEventData(eventSystem);
-        pointerEventData.position = new Vector2(x, y);
-        
+        pointerEventData.position = new Vector2(position.x, position.y);
+
+        var raycastResultList = new List<RaycastResult>();
         graphicRaycaster.Raycast(pointerEventData, raycastResultList);
+        
         var raycastResult = raycastResultList.Find(element => element.gameObject.GetComponent<Button>());
         if (raycastResult.gameObject == null)
         {
@@ -910,11 +963,11 @@ namespace OpenVRUtil
         {
             if (OpenVR.System != null) return;
 
-            var initError = EVRInitError.None;
-            OpenVR.Init(ref initError, EVRApplicationType.VRApplication_Overlay);
-            if (initError != EVRInitError.None)
+            var error = EVRInitError.None;
+            OpenVR.Init(ref error, EVRApplicationType.VRApplication_Overlay);
+            if (error != EVRInitError.None)
             {
-                throw new Exception("OpenVRの初期化に失敗しました: " + initError);
+                throw new Exception("OpenVRの初期化に失敗しました: " + error);
             }
         }
 
@@ -941,14 +994,6 @@ namespace OpenVRUtil
             return handle;
         }
 
-        public static void DestroyOverlay(ulong handle)
-        {
-            if (handle != OpenVR.k_ulOverlayHandleInvalid)
-            {
-                OpenVR.Overlay.DestroyOverlay(handle);
-            }
-        }
-
         public static (ulong, ulong) CreateDashboardOverlay(string key, string name)
         {
             ulong dashboardHandle = 0;
@@ -958,16 +1003,19 @@ namespace OpenVRUtil
             {
                 throw new Exception("ダッシュボード‐バーレイの作成に失敗しました: " + error);
             }
-
+ 
             return (dashboardHandle, thumbnailHandle);
         }
-
-        public static void ShowOverlay(ulong handle)
+        
+        public static void DestroyOverlay(ulong handle)
         {
-            var error = OpenVR.Overlay.ShowOverlay(handle);
-            if (error != EVROverlayError.None)
+            if (handle != OpenVR.k_ulOverlayHandleInvalid)
             {
-                throw new Exception("オーバーレイの表示に失敗しました: " + error);
+                var error = OpenVR.Overlay.DestroyOverlay(handle);
+                if (error != EVROverlayError.None)
+                {
+                    throw new Exception("オーバーレイの破棄に失敗しました: " + error);
+                }
             }
         }
 
@@ -977,6 +1025,15 @@ namespace OpenVRUtil
             if (error != EVROverlayError.None)
             {
                 throw new Exception("画像ファイルの描画に失敗しました: " + error);
+            }
+        }
+
+        public static void ShowOverlay(ulong handle)
+        {
+            var error = OpenVR.Overlay.ShowOverlay(handle);
+            if (error != EVROverlayError.None)
+            {
+                throw new Exception("オーバーレイの表示に失敗しました: " + error);
             }
         }
 
@@ -1020,6 +1077,7 @@ namespace OpenVRUtil
                 vMin = 1,
                 vMax = 0
             };
+
             var error = OpenVR.Overlay.SetOverlayTextureBounds(handle, ref bounds);
             if (error != EVROverlayError.None)
             {
@@ -1029,11 +1087,8 @@ namespace OpenVRUtil
 
         public static void SetOverlayRenderTexture(ulong handle, RenderTexture renderTexture)
         {
-            if (!renderTexture.IsCreated())
-            {
-                return;
-            }
-            
+            if (!renderTexture.IsCreated()) return;
+
             var nativeTexturePtr = renderTexture.GetNativeTexturePtr();
             var texture = new Texture_t
             {
@@ -1047,7 +1102,7 @@ namespace OpenVRUtil
                 throw new Exception("テクスチャの描画に失敗しました: " + error);
             }
         }
-
+        
         public static void SetOverlayMouseScale(ulong handle, int x, int y)
         {
             var pvecMouseScale = new HmdVector2_t()
@@ -1084,3 +1139,6 @@ public class WatchSettingController : MonoBehaviour
     }
 }
 ```
+
+これで OpenVR 側のダッシュボードオーバーレイのイベントを処理して、Unity 側の UI を操作することができました。
+次のページではコントローラのボタン操作を扱い、ボタンが押されたら一定時間だけ時刻が表示される処理を作ります。
