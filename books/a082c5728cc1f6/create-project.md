@@ -9,12 +9,12 @@ Unity で新規プロジェクトを作成します。
 ![](/images/create-project.png)
 
 ## SteamVR Plugin のインストール
-Unity Asset Store で SteamVR Plugin をMyアセットに追加します。
+Unity Asset Store で SteamVR Plugin を**Myアセットに追加**します。
 https://assetstore.unity.com/packages/tools/integration/steamvr-plugin-32647
 
 ![](/images/add-to-my-assets.png)
 
-そのまま Asset Store 上で「Unityで開く」ボタンを押します。
+そのまま Asset Store 上で**Unityで開く**ボタンを押します。
 Unity 上で Package Manager が開くので、SteamVR Plugin をインポートします。
 
 ![](/images/open-in-unity.png)
@@ -40,9 +40,9 @@ https://github.com/ValveSoftware/openvr
 :::
 
 ## プロジェクトの設定
-メニューから Edit > Project Setttings を開きます。
-左側の XR Plug-in Management を選択します。
-Initialize XR on Startup のチェックを外します。
+メニューから **Edit > Project Setttings** を開きます。
+左側の **XR Plug-in Management** を選択します。
+**Initialize XR on Startup** のチェックを外します。
 ![](/images/turn-off-xr-plugin-management.png)
 
 ## シーンを空にする

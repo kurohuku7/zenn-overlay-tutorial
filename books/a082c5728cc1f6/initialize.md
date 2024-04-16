@@ -24,7 +24,7 @@ public class WatchOverlay : MonoBehaviour
 ```
 
 ## スクリプトをシーンに設置
-Hierarchy ウィンドウ（以下 Hierarchy）を右クリック > Create Empty で、空のオブジェクトを作成します。
+Hierarchy ウィンドウ（以下 Hierarchy）を**右クリック > Create Empty** で、空のオブジェクトを作成します。
 オブジェクトの名前を `WatchOverlay` に変更し、先程の `WatchOverlay.cs` をドラッグしてコンポーネントとして追加します。
 ![](/images/add-watch-overlay-component.png)
 
