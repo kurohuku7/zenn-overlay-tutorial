@@ -3,11 +3,11 @@ title: "オーバーレイの作成"
 free: false
 ---
 
-## key と name
+## key と name の準備
 オーバーレイの作成時に `key` と `name` の 2 つの文字列を設定します。
-`key` は他のオーバーレイと重複しない一意な文字列です。
+`key` は他のオーバーレイを識別するときに使われる一意な文字列です。
 `name` は表示用の任意の文字列です。
-ここでは、それぞれ `"WatchOverlayKey"` と `"WatchOverlay"` とします。
+ここでは、それぞれ `"WatchOverlayKey"` と `"WatchOverlay"` として作成します。
 
 ```diff cs:WatchOverlay.cs
 void Start()
@@ -19,11 +19,9 @@ void Start()
 }
 ```
 
-※ 実際のアプリでは、重複を避けるため `key` に `Application.companyName` や `Application.productName` などを組み込むとよいかと思います。
-
-## オーバーレイハンドル
-ファイルをファイルハンドルで操作するように、オーバーレイはオーバーレイハンドルで操作します。
+## オーバーレイハンドルの準備
 オーバーレイハンドルを保存する変数を作成します。
+ファイルをファイルハンドルで操作するように、オーバーレイはオーバーレイハンドルで操作します。
 
 ```diff cs:WatchOverlay.cs
 void Start()
@@ -36,11 +34,11 @@ void Start()
 }
 ```
 
-初期値の `OpenVR.k_ulOverlayHandleInvalid` はオーバーレイが作成できていないことを表す値です。
+初期値の [OpenVR.k_ulOverlayHandleInvalid](https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.OpenVR.html?q=k_ulOverlayHandleInvalid#Valve_VR_OpenVR_k_ulOverlayHandleInvalid) はオーバーレイが作成できていないことを表しています。ハンドルは `ulong` 型です。
 
 ## オーバーレイの作成とハンドルの取得
 オーバーレイの作成には [CreateOverlay()](https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.CVROverlay.html#Valve_VR_CVROverlay_CreateOverlay_System_String_System_String_System_UInt64__) を使います。（詳細は [Wiki](https://github.com/ValveSoftware/openvr/wiki/IVROverlay::CreateOverlay) を参照）
-引数に、先ほど作成した `key`, `name` と `overlayHandle` の参照を渡します。
+先ほど作成した `key`, `name` と `overlayHandle` の参照を引数として渡します。
 
 ```diff cs:WatchOverlay.cs
 void Start()
@@ -55,10 +53,10 @@ void Start()
 ```
 
 `overlayHandle` に、作成されたオーバーレイのハンドルが保存されます。
-作成時のエラーは関数の戻り値として取得できます。
+戻り値はオーバーレイ作成時のエラー情報です。
 
 ## エラー処理
-エラー処理を追加します。
+オーバーレイの作成に失敗したときのエラー処理を追加します。
 ```diff cs:WatchOverlay.cs
 void Start()
 {
@@ -74,14 +72,14 @@ void Start()
 +   }
 }
 ```
-OpenVR の初期化と同じように、エラーが発生しなければ EVROverlayError.None が返ります。
-オーバーレイ関連のエラーは [EVROverlayError](https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.EVROverlayError.html) に定義されています。
+エラーがなければ `EVROverlayError.None` が返ります。
+オーバーレイ関連のエラー内容は [EVROverlayError](https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.EVROverlayError.html) で定義されています。
 
 ## オーバーレイのクリーンアップ
-作成したオーバーレイを、アプリケーション終了時に破棄します。
+作成したオーバーレイを、アプリケーション終了時に破棄するコードを追加します。
 
 ### overlayHandle を移動
-overlayHandle を Steam() 内から、クラスのメンバに移動します。
+`overlayHandle` を `Start()` 内から、クラスのメンバ変数に移動します。
 
 ```diff cs:WatchOverlay.cs
 public class WatchOverlay : MonoBehaviour
@@ -92,9 +90,9 @@ public class WatchOverlay : MonoBehaviour
     {
         InitOpenVR();
 
--       var overlayHandle = OpenVR.k_ulOverlayHandleInvalid;
         var key = "WatchOverlayKey";
         var name = "WatchOverlay";
+-       var overlayHandle = OpenVR.k_ulOverlayHandleInvalid;
         var error = OpenVR.Overlay.CreateOverlay(key, name, ref overlayHandle);
         if (error != EVROverlayError.None)
         {
@@ -106,11 +104,10 @@ public class WatchOverlay : MonoBehaviour
 }
 ```
 
-これは OnDestroy() から、overlayHandle を使用するためです。
-
 ### オーバーレイの破棄
-オーバーレイの破棄に使用するのは `DestroyOverlay()` です。（詳細は [Wiki](https://github.com/ValveSoftware/openvr/wiki/IVROverlay::DestroyOverlay) を参照）
-OnDestroy() 内で破棄します。
+オーバーレイの破棄に使用するのは [DestroyOverlay()](https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.CVROverlay.html#Valve_VR_CVROverlay_DestroyOverlay_System_UInt64_) です。（詳細は [Wiki](https://github.com/ValveSoftware/openvr/wiki/IVROverlay::DestroyOverlay) を参照）
+`OnApplicationQuit()` を作成して、オーバーレイを破棄するコードを追加します。
+
 ```diff cs:WatchOverlay.cs
 public class WatchOverlay : MonoBehaviour
 {
@@ -129,13 +126,20 @@ public class WatchOverlay : MonoBehaviour
         }
     }
 
-    private void OnDestroy()
-    {
++   private void OnApplicationQuit()
++   {
 +       if (overlayHandle != OpenVR.k_ulOverlayHandleInvalid)
 +       {
-+           OpenVR.Overlay.DestroyOverlay(overlayHandle);
++           var error = OpenVR.Overlay.DestroyOverlay(overlayHandle);
++           if (error != EVROverlayError.None)
++           {
++               throw new Exception("オーバーレイの破棄に失敗しました: " + error);
++           }
 +       }
++   }
 
+    private void OnDestroy()
+    {
         ShutdownOpenVR();
     }
 
@@ -143,33 +147,43 @@ public class WatchOverlay : MonoBehaviour
 }
 ```
 
-### オーバーレイの確認
-SteamVR に同梱されている Overlay Viewer を使って、実際にオーバーレイが作られているか確認してみましょう。
+`OpenVR.Overlay.DestroyOverlay()` は `OpenVR.Shutdown()` よりも先に実行する必要があるため、`OnDestory()` より先に実行される `OnApplicationQuit()` に書いています。
+https://docs.unity3d.com/Manual/ExecutionOrder.html
 
-SteamVR のウィンドウのメニューから Developer > Overlay Viewer を選択します。
+### オーバーレイの確認
+オーバーレイが作成できたか確認してみましょう。
+SteamVR に同梱されている **Overlay Viewer** を使うと、作成されたオーバーレイを確認できます。
+
+SteamVR のウィンドウのメニューから **Developer > Overlay Viewer** を選択します。
+![](/images/steamvr-menu.png)
 ![](/images/overlay-viewer-menu.png)
 
-Overlay Viewer では、SteamVR 上に作成されているオーバーレイの一覧を確認できます。
+作成されているオーバーレイの一覧が表示されます。
+既に SteamVR のシステムによって作成されたオーバーレイがたくさん表示されていますね。
 ![](/images/overlay-list.png)
 
-この状態でプログラムを実行してみましょう。
-Overlay Viewer の左上の一覧に、先ほど指定したキー `WatchOverlayKey` が追加されます。
-クリックすると、左下にオーバーレイの詳細が表示されますね。
+この状態で Unity からプログラムを実行してください。
+
+オーバーレイの一覧に、先ほど指定したキー `WatchOverlayKey` が追加されます。
+クリックするとオーバーレイの詳細が表示されます。
 ![](/images/overlay-viewer-created.png)
 
-右側の灰色はオーバーレイの描画内容が表示されますが、今は何も描画していない状態です。
+右側の灰色の領域にオーバーレイのプレビューが表示されますが、まだ何も描画していないので何も表示されません。
+
+オーバーレイが作成できていることを確認できたので、プログラムを終了して Overlay Viewer を閉じます。
 
 :::message
-Overlay Viewer の実行ファイルは、SteamVR のディレクトリに入っています。
-デフォルトは `C:\Program Files (x86)\Steam\steamapps\common\SteamVR\bin\win32\overlay_viewer.exe` です。
+Overlay Viewer は SteamVR のインストールディレクトリに入っています。
+`C:\Program Files (x86)\Steam\steamapps\common\SteamVR\bin\win32\overlay_viewer.exe`
+
 開発中は何度も起動することになるので、ショートカットを作成しておくと便利です。
 :::
 
 ## コード整理
-ここまでのコードを関数に分けつつ整理しておきます。
 
 ### オーバーレイの作成
-オーバーレイの作成は `CreateOverlay()` という関数に分けておきます。
+オーバーレイの作成は `CreateOverlay()` という関数を作って分けておきます。
+`key` と `name` を受け取って、オーバーレイハンドルを返します。
 
 ```diff cs:WatchOverlay.cs
 public class WatchOverlay : MonoBehaviour
@@ -179,7 +193,6 @@ public class WatchOverlay : MonoBehaviour
     private void Start()
     {
        InitOpenVR();
-
 
 -      var key = "WatchOverlayKey";
 -      var name = "WatchOverlay";
@@ -194,6 +207,7 @@ public class WatchOverlay : MonoBehaviour
     ～省略～
 
 +   private ulong CreateOverlay(string key, string name) {
++       // 少しコードが変わっています
 +       var handle = OpenVR.k_ulOverlayHandleInvalid;
 +       var error = OpenVR.Overlay.CreateOverlay(key, name, ref handle);
 +       if (error != EVROverlayError.None)
@@ -206,28 +220,37 @@ public class WatchOverlay : MonoBehaviour
 ```
 
 ### オーバーレイの破棄
-オーバーレイの破棄は `DestroyOverlay()` という関数に分けておきます。
+同様に `DestroyOverlay()` という関数に分けておきます。
 ```diff cs:WatchOverlay.cs
 public class WatchOverlay : MonoBehaviour
 {
     ～省略～
 
-    private void OnDestroy()
+    private void OnApplicationQuit()
     {
 -       if (overlayHandle != OpenVR.k_ulOverlayHandleInvalid)
 -       {
--           OpenVR.Overlay.DestroyOverlay(overlayHandle);
+-           var error = OpenVR.Overlay.DestroyOverlay(overlayHandle);
+-           if (error != EVROverlayError.None)
+-           {
+-               throw new Exception("オーバーレイの破棄に失敗しました: " + error);
+-           }
 -       }
 +       DestroyOverlay(overlayHandle);
-        ShutdownOpenVR();
     }
 
     ～省略～
 
-+   private void DestroyOverlay(ulong handle) {
++   // overlayHandle -> handle に変数名を変えています
++   private void DestroyOverlay(ulong handle)
++   {
 +       if (handle != OpenVR.k_ulOverlayHandleInvalid)
 +       {
-+           OpenVR.Overlay.DestroyOverlay(handle);
++           var error = OpenVR.Overlay.DestroyOverlay(handle);
++           if (error != EVROverlayError.None)
++           {
++               throw new Exception("オーバーレイの破棄に失敗しました: " + error);
++           }
 +       }
 +   }
 }
@@ -248,10 +271,14 @@ public class WatchOverlay : MonoBehaviour
         InitOpenVR();
         overlayHandle = CreateOverlay("WatchOverlayKey", "WatchOverlay");
     }
+    
+    private void OnApplicationQuit()
+    {
+        DestroyOverlay(overlayHandle);
+    }
 
     private void OnDestroy()
     {
-        DestroyOverlay(overlayHandle);
         ShutdownOpenVR();
     }
 
@@ -267,15 +294,16 @@ public class WatchOverlay : MonoBehaviour
         }
     }
 
-   private void ShutdownOpenVR()
-   {
-       if (OpenVR.System != null)
-       {
-           OpenVR.Shutdown();
-       }
-   }
+    private void ShutdownOpenVR()
+    {
+        if (OpenVR.System != null)
+        {
+            OpenVR.Shutdown();
+        }
+    }
 
-    private ulong CreateOverlay(string key, string name) {
+    private ulong CreateOverlay(string key, string name)
+    {
         var handle = OpenVR.k_ulOverlayHandleInvalid;
         var error = OpenVR.Overlay.CreateOverlay(key, name, ref handle);
         if (error != EVROverlayError.None)
@@ -285,11 +313,18 @@ public class WatchOverlay : MonoBehaviour
         return handle;
     }
 
-    private void DestroyOverlay(ulong handle) {
+    private void DestroyOverlay(ulong handle)
+    {
         if (handle != OpenVR.k_ulOverlayHandleInvalid)
         {
-            OpenVR.Overlay.DestroyOverlay(handle);
+            var error = OpenVR.Overlay.DestroyOverlay(handle);
+            if (error != EVROverlayError.None)
+            {
+                throw new Exception("オーバーレイの破棄に失敗しました: " + error);
+            }
         }
     }
 }
 ```
+
+オーバーレイの作成ができたので、次のページではオーバーレイに画像を表示してみます。
