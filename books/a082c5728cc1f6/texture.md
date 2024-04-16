@@ -3,30 +3,27 @@ title: "カメラ映像の表示"
 free: false
 ---
 
-オーバーレイに時刻をリアルタイムに表示してみます。
-これまでは画像ファイルをオーバーレイに表示していましたが、カメラの映像をリアルタイムに表示できるようにしてみます。
-
 ## カメラ映像の準備
 
-時刻表示を作る前に、適当な 3D シーンのカメラ映像をオーバーレイに表示してみます。
+時刻表示を作る前に、まずは簡単な 3D シーンのカメラ映像をオーバーレイに表示してみます。
 
 ### シーンの準備
-Unity のシーンに
+Unity の Hierarchy を右クリックして
 
 - Camera
-- 3D Object → Cube
-- Light → Directional Light
+- 3D Object > Cube
+- Light > Directional Light
 
 を新規作成します。
 
 ![](/images/3d-scene-hierarchy.png)
 
-カメラに Cube が映るように配置してください。細かい部分は適当で大丈夫です。
+カメラに Cube が映るように、それぞれのオブジェクトを配置してください。細かい部分は適当で大丈夫です。
 ![](/images/3d-scene-layout.png)
 
 ### Cube を回転させる
-リアルタイムに動いているカメラ映像を作りたいので、Cube が回転するアニメーションを作ります。
-新規に `Scripts/Rotate.cs` を作成します。
+リアルタイムに動いている映像を作りたいので、Cube が回転するスクリプトを作ります。
+`Scripts` フォルダに `Rotate.cs` を新規作成して、下のコードをコピーしてください。
 
 ```cs:Rotate.cs
 using UnityEngine;
@@ -41,14 +38,16 @@ public class Rotate : MonoBehaviour
 ```
 
 `Rotate.cs` を Cube オブジェクトに追加します。
-![](/images/cube-rotate-component.png)
+![](/images/add-rotate.png)
 
 プログラムを実行して Cube が回転することを確認します。
 ![](/images/rotate-cube.gif)
 
+これでシーンの準備は完了です。
+
 ### カメラの参照を追加
 
-`WatchOverlay.cs` にカメラの変数を作成します。
+`WatchOverlay.cs` にカメラのメンバ変数を追加します。
 
 ```diff cs:WatchOverlay.cs
 public class WatchOverlay : MonoBehaviour
@@ -57,20 +56,21 @@ public class WatchOverlay : MonoBehaviour
     private ulong overlayHandle = OpenVR.k_ulOverlayHandleInvalid;
 
     [Range(0, 0.5f)] public float size;
-    [Range(-0.5f, 0.5f)] public float x;
-    [Range(-0.5f, 0.5f)] public float y;
-    [Range(-0.5f, 0.5f)] public float z;
+    [Range(-0.2f, 0.2f)] public float x;
+    [Range(-0.2f, 0.2f)] public float y;
+    [Range(-0.2f, 0.2f)] public float z;
     [Range(0, 360)] public int rotationX;
     [Range(0, 360)] public int rotationY;
     [Range(0, 360)] public int rotationZ;
-...
+
+    ～省略～
 ```
 
-追加した変数に、シーン上のカメラを設定します。
+Unity のインスペクタで、`WatchOverlay` の `Camera` に、先ほど作成したカメラを設定します。
 ![](/images/attach-camera.png)
 
 ### 画像ファイルのコードを削除
-画像ファイルの表示処理を削除します。
+カメラの映像を表示するため、画像ファイルの表示は削除します。
 ```diff cs:WatchOverlay.cs
 private void Start()
 {
@@ -86,23 +86,25 @@ private void Start()
 ```
 
 ### RenderTexture の作成
-`Assets` の下に `RenderTextures` フォルダを作成します。
-`RenderTextures` フォルダを右クリック > Create > RenderTexture で Render Texture アセットを作成します。
+Unity の Project ウィンドウで `Assets` の下に `RenderTextures` フォルダを作成します。
+作成した `RenderTextures` フォルダを **右クリック > Create > RenderTexture** で Render Texture アセットを作成します。
+![](/images/rendertexture-menu.png)
+
 アセット名を `WatchRenderTexture` に変更します。
 ![](/images/watch-render-texture-asset.png)
 
 ### カメラ映像を RenderTexture に書き出す
-Camera をクリックして、インスペクタの Target Texture に WatchRenderTexture をドラッグします。
+Hierarchy でシーン上の `Camera` をクリックして、インスペクタの **Target Texture** に、今作った `WatchRenderTexture` アセットをドラッグします。
 ![](/images/attach-rendertexture-to-camera.png)
-これでカメラの映像が WatchRenderTexture に書き込まれるようになります。
+これでカメラの映像が `WatchRenderTexture` に書き込まれるようになります。
 
 ### RenderTexture の設定
-`WatchRenderTexture` をクリックしてインスペクタを表示します。
-Size を 512 x 512 に変更します。
+Project ウィンドウで `WatchRenderTexture` をクリックしてインスペクタを表示します。
+**Size** を **512 x 512** に変更します。
 ![](/images/change-size.png)
 
-:::details スクリプトで RenderTexture を作成する
-事前に RenderTexture のアセットを作成せずに、コード内で RenderTexture を生成したい場合は、下記のように作成できます。
+:::details スクリプトで RenderTexture を生成したい場合
+事前に RenderTexture のアセットを作成せずに、コード内で RenderTexture を生成したい場合は、例えば下記のように作成できます。
 
 ```diff cs:WatchOverlay.cs
 public class WatchOverlay : MonoBehaviour
@@ -111,13 +113,7 @@ public class WatchOverlay : MonoBehaviour
 +   private RenderTexture renderTexture;
     private ulong overlayHandle = OpenVR.k_ulOverlayHandleInvalid;
 
-    [Range(0, 0.5f)] public float size = 0.5f;
-    [Range(-0.5f, 0.5f)] public float x;
-    [Range(-0.5f, 0.5f)] public float y;
-    [Range(-0.5f, 0.5f)] public float z;
-    [Range(0, 360)] public int rotationX;
-    [Range(0, 360)] public int rotationY;
-    [Range(0, 360)] public int rotationZ;
+    ～省略～
 
     private void Start()
     {        
@@ -134,12 +130,10 @@ public class WatchOverlay : MonoBehaviour
 
     ～省略～
 ```
-
-Render Texture をアセットとして作成する場合、事前にサイズを設定することで、シーン上でカメラ映像のプレビューが実際の実行環境と同じ見た目で確認できるという理由でアセットを作成しています。
 :::
 
 ### Render Texture の変数を作成
-RenderTexture の変数を作成します。
+RenderTexture を入れるメンバ変数を作成します。
 ```diff cs:WatchOverlay.cs
 public class WatchOverlay : MonoBehaviour
 {
@@ -150,26 +144,12 @@ public class WatchOverlay : MonoBehaviour
     ～省略～
 ```
 
-`WatchOverlay` のインスペクタで、`renderTexture` に `WatchRenderTexture` アセットを設定します。
+`WatchOverlay` のインスペクタを開き、`renderTexture` に `WatchRenderTexture` アセットを設定します。
 ![](/images/attach-render-texture-to-overlay.png)
 
-### ネイティブテクスチャの取得
-OpenVR に渡すテクスチャは Unity のテクスチャの下のレイヤーで使われている DirectX や OpenGL といったグラフィックス API のテクスチャになります。
-[GetNativeTexturePtr()](https://docs.unity3d.com/ScriptReference/Texture.GetNativeTexturePtr.html) を使って Unity のテクスチャから DirectX や OpenGL のテクスチャのポインタを取得します。
-
-`Update()` 内で `GetNativeTexturePtr()` を呼び出します。
-
-```diff cs:WatchOverlay.cs
-～省略～
-
-private void Start()
-{        
-    InitOpenVR();
-    overlayHandle = CreateOverlay("WatchOverlayKey", "WatchOverlay");
-    SetOverlaySize(overlayHandle, size);
-    ShowOverlay(overlayHandle);
-}
-    
+### テクスチャの作成を待つ
+レンダーテクスチャの作成が完了していない場合は、描画を行わないようにします。
+```diff cs:WatchOerlay.cs
 private void Update()
 {
     var leftControllerIndex = OpenVR.System.GetTrackedDeviceIndexForControllerRole(ETrackedControllerRole.LeftHand);
@@ -180,21 +160,48 @@ private void Update()
         SetOverlayTransformRelative(overlayHandle, leftControllerIndex, position, rotation);
     }
 
-+   var nativeTexturePtr = renderTexture.GetNativeTexturePtr();
++   if (!renderTexture.IsCreated())
++   {
++       return;
++   }
++
++   // ここに描画処理を追加
 }
 
-～省略～
-    
+```
+
+### ネイティブテクスチャポインタの取得
+OpenVR に渡すテクスチャのデータ形式は、Unity の API の下のレイヤーで使われている DirectX や OpenGL といったグラフィックス API のデータ形式になります。
+Unity の [GetNativeTexturePtr()](https://docs.unity3d.com/ScriptReference/Texture.GetNativeTexturePtr.html) を使って、DirectX や OpenGL のテクスチャデータへアクセスするための参照（ネイティブテクスチャポインタ）を取得できます。
+
+`Update()` 内で、レンダーテクスチャの `GetNativeTexturePtr()` を呼び出して、OpenVR に渡すためのテクスチャの参照を取得します。
+
+```diff cs:WatchOverlay.cs
+private void Update()
+{
+    var leftControllerIndex = OpenVR.System.GetTrackedDeviceIndexForControllerRole(ETrackedControllerRole.LeftHand);
+    if (leftControllerIndex != OpenVR.k_unTrackedDeviceIndexInvalid)
+    {
+        var position = new Vector3(x, y, z);
+        var rotation = Quaternion.Euler(rotationX, rotationY, rotationZ);
+        SetOverlayTransformRelative(overlayHandle, leftControllerIndex, position, rotation);
+    }
+
+    if (!renderTexture.IsCreated())
+    {
+        return;
+    }
++   var nativeTexturePtr = renderTexture.GetNativeTexturePtr();
+}
 ```
 
 :::details レンダリングスレッドの同期について
 [GetNativeTexturePtr() のドキュメント](https://docs.unity3d.com/ScriptReference/Texture.GetNativeTexturePtr.html)では、`GetNativeTexturePtr()` は初期化時に一度だけ呼び出すことが推奨されています。
-しかしオーバーレイへの描画処理は、レンダリングスレッドが同期した状態で実行しなければクラッシュすることがあるため、スレッドの同期のために敢えて `Update()` 内で `GetNativeTexturePtr()` を呼び出しています。
-`GetNativeTexturePtr()` を呼び出した後に、続けてオーバーレイへの描画処理を書きます。
+しかしオーバーレイへの描画処理は、レンダリングスレッドが同期したタイミングで実行しなければクラッシュすることがあるため、敢えて `Update()` 内で `GetNativeTexturePtr()` を呼び出しています。
 :::
 
 ### OpenVR のテクスチャを作成
-OpenVR の `Texture_t` 型の変数を作成します。
+OpenVR 側のテクスチャのデータ型 `Texture_t` の変数を作成します。
 
 ```diff cs:WatchOverlay.cs
 private void Update()
@@ -207,21 +214,28 @@ private void Update()
         SetOverlayTransformRelative(overlayHandle, leftControllerIndex, position, rotation);
     }
 
+    if (!renderTexture.IsCreated())
+    {
+        return;
+    }
     var nativeTexturePtr = renderTexture.GetNativeTexturePtr();
 +   var texture = new Texture_t
 +   {
 +       eColorSpace = EColorSpace.Auto,
-+       eType = ETextureType.DirectX
++       eType = ETextureType.DirectX,
 +       handle = nativeTexturePtr
 +   };
 }
 ```
 
-`handle` に、先ほど取得したテクスチャのポインタ `nativeTexturePtr` をセットします。
+`eType` にグラフィックス API の種類を指定します。このチュートリアルの環境では、
+デフォルトで DirectX が使われるので、今後は DirectX を前提としてコードを作成します。
+
+`handle` に先ほど取得したネイティブテクスチャのポインタ `nativeTexturePtr` をセットします。
+このテクスチャにカメラの映像が書き込まれています。
 
 :::details DirectX 以外に対応させる場合
-チュートリアルの環境では、デフォルトで DirectX が使用されています。
-Unity が実行時に使用している API の種類は `SystemInfo.graphicsDeviceType` で判定できるので、DirectX 以外の API が使われている場合に対応させる場合は、下記のように書けます。
+Unity が実行時に使用しているグラフィックス API の種類は `SystemInfo.graphicsDeviceType` で判定できます。
 ```cs
 switch (SystemInfo.graphicsDeviceType)
 {
@@ -242,14 +256,14 @@ switch (SystemInfo.graphicsDeviceType)
 }
 ```
 
-Project Settings > Player > Other Settings > Auto Graphics API for Windows のチェックを外して、Graphics APIs for Windows のリストの一番上に Direct3D11 以外の API を追加すると、その API を使った動作確認が可能です。
+**Project Settings > Player > Other Settings > Auto Graphics API for Windows** のチェックを外して、**Graphics APIs for Windows** のリストの一番上に Direct3D11 以外の API を追加すると、その API を使った動作確認が可能です。
 ![](/images/graphics-api.png)
 https://docs.unity3d.com/ja/2019.4/Manual/GraphicsAPIs.html
 :::
 
-### オーバーレイにテキスチャを書き込む
-[SetOverlayTexture()](https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.CVROverlay.html#Valve_VR_CVROverlay_SetOverlayTexture_System_UInt64_Valve_VR_Texture_t__) で、オーバーレイにテクスチャを表示します。（詳細は [Wiki](https://github.com/ValveSoftware/openvr/wiki/IVROverlay::SetOverlayTexture) を参照）
-先ほど作成した Texture_t 型のテクスチャを使います。
+### オーバーレイにテクスチャを書き込む
+OpenVR の [SetOverlayTexture()](https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.CVROverlay.html#Valve_VR_CVROverlay_SetOverlayTexture_System_UInt64_Valve_VR_Texture_t__) で、オーバーレイにテクスチャを表示できます。（詳細は [Wiki](https://github.com/ValveSoftware/openvr/wiki/IVROverlay::SetOverlayTexture) を参照）
+先ほど作成した `Texture_t` 型のテクスチャを渡します。
 
 ```diff cs:WatchOverlay.cs
 private void Update()
@@ -262,6 +276,11 @@ private void Update()
         SetOverlayTransformRelative(overlayHandle, leftControllerIndex, position, rotation);
     }
 
+
+    if (!renderTexture.IsCreated())
+    {
+        return;
+    }
     var nativeTexturePtr = renderTexture.GetNativeTexturePtr();
     var texture = new Texture_t
     {
@@ -272,7 +291,7 @@ private void Update()
 +   var error = OpenVR.Overlay.SetOverlayTexture(overlayHandle, ref texture);
 +   if (error != EVROverlayError.None)
 +   {
-+       throw new Exception($"テクスチャの描画に失敗しました({error})");
++       throw new Exception($"テクスチャの描画に失敗しました: " + error);
 +   }
 }
 ```
@@ -282,15 +301,14 @@ private void Update()
 ![](/images/realtime-rendering.gif)
 
 ### 上下を反転させる
-オーバーレイの下側に Unity の空が表示されています。
-テクスチャの上下が反転しているので、正しい向きに直します。
+カメラ映像が上下逆さまに表示されているので、正しい向きに直します。
 
-テクスチャの UV 座標系が、Unity や OpenGL は左下が (0, 0)、Direct X は左上が (0, 0) になっているので、Unity から DirectX にテクスチャを渡すと上下が逆になります。
+テクスチャの UV 座標系が、Unity は左下が原点で V 軸が上向き、DirectX は左上が原点で V 軸が下向きのため、最終的に OpenVR が描画した結果が上下逆さまになっています。
 https://docs.unity3d.com/ja/current/Manual/SL-PlatformDifferences.html
 
-正しい向きにする方法は色々ありますが、今回は [SetOverlayTextureBounds()](https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.CVROverlay.html#Valve_VR_CVROverlay_SetOverlayTextureBounds_System_UInt64_Valve_VR_VRTextureBounds_t__) でオーバーレイに描画するテクスチャの UV 座標系の V 軸（縦方向）を逆にすることで上下を反転させます。（詳細は [Wiki](https://github.com/ValveSoftware/openvr/wiki/IVROverlay::SetOverlayTextureBounds) を参照）
-`SetOverlayTextureBounds()` はテクスチャのどの範囲を描画するかを指定する関数ですが、向きを変えるためにも使用できます。
-デフォルトでは vMin = 0, vMax = 1 ですが、縦方向を逆にするため vMin = 1, vMax = 0 を渡します。
+正しい向きに直す方法は色々ありますが、今回は OpenVR の [SetOverlayTextureBounds()](https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.CVROverlay.html#Valve_VR_CVROverlay_SetOverlayTextureBounds_System_UInt64_Valve_VR_VRTextureBounds_t__) でテクスチャの V 軸を逆にして割り当てるすることで上下を反転させます。（詳細は [Wiki](https://github.com/ValveSoftware/openvr/wiki/IVROverlay::SetOverlayTextureBounds) を参照）
+
+`SetOverlayTextureBounds()` はテクスチャを表示する範囲を UV 座標で指定する関数ですが、上下を反転させるためにも使えます。デフォルトでは **vMin = 0, vMax = 1** ですが、縦方向を逆にするため **vMin = 1, vMax = 0** に設定します。
 
 ```diff cs:WatchOverlay.cs
 private void Start()
@@ -316,62 +334,64 @@ private void Start()
 }
 ```
 
-これで上下が反転します。オーバーレイの上側に Unity の空が表示されていますね。
+これで上下が反転します。プログラムを実行して正しい向きで表示されていることを確認してください。
 ![](/images/flip-y-axis.jpg)
 
 :::details DirectX 以外に対応させる場合
-このチュートリアルの動作環境では、デフォルトで DirectX が使われるため、上下を反転させています。
-他の API が使われる環境に対応させる場合は、`graphicsDeviceType` を参照して、DirectX だったら反転させる処理をいれるといった方法に変えてください。
+このチュートリアルでは、DirectX を前提としているため、必ず上下を反転させています。
+他の API に対応させる場合は、上の**DirectX 以外に対応させる場合**に書いた通り `graphicsDeviceType` を参照して「OpenVR なら反転させない」といった分岐を作成してください。
 :::
 
 
 ## 時刻を表示する Canvas を作る
 カメラの映像が表示できたので、次は時計を作成します。
-Cube と Directional Light は使わないのでシーンから削除してください。
+Cube と Directional Light はもう使わないので、シーンから削除してください。
 
 ![](/images/only-overlay-camera.png)
 
-シーンに下記のオブジェクトを追加します。
-- UI > Canvas を作成
-- Canvas の下に UI > Text - TextMeshPro を作成
+Camera のインスペクタを開き、Transform コンポーネントから Reset をクリックして **(0, 0, 0) へリセット**します。
+![](/images/reset-camera-position.png)
+
+Hierarchy を右クリックして、シーンに下記のオブジェクトを追加します。
+- **UI > Canvas**
+- 作成した Canvas の下に **UI > Text - TextMeshPro**
 
 ![](/images/canvas-text-hierarchy.png)
 
-TextMeshPro を作成するとダイアログが表示されるので、Import TMP Essentials をクリックします。完了したらダイアログを閉じます。
+初めて TextMeshPro を作成すると下のようなダイアログが表示されるので、**Import TMP Essentials** をクリックします。完了したらダイアログを閉じます。
 ![](/images/import-tmp-essentials.png)
 
-Canvas の Render mode を Screen Space - Camera にします。
-Canvas の Render Camera にシーン上のカメラをドラッグしてください。
+Canvas のインスペクタを開き **Render mode** を **Screen Space - Camera** にします。
+そのまま **Render Camera** にシーン上のカメラをドラッグしてください。
 ![](/images/set-canvas-camera.png)
 
-Text (TMP) の Alignment でテキストの縦横の位置を中央に揃えます。
-テキストに "00:00:00" を入力してください。
+Text (TMP) のインスペクタを開き **Alignment** でテキストの縦横の位置を中央に揃えます。
+テキストに "00:00:00" と入力してください。
 ![](/images/text-alignment.png)
 
-Camera の Clear Flags を Solid Color にします。
-Camera の Background の色をクリックし、Alpha を 0 にして背景を透明にします。
+Camera を選択して **Clear Flags** を **Solid Color** にします。
+また **Background** の色をクリックし、**A (Alpha) が 0** になっていることを確認します。
 これでカメラ映像の背景が透過されて、時刻だけが描画されるようになります。
 ![](/images/background-color.png)
 
-Canvas の Plane Distance を 10 にします。大きさ調整のためです。
+Canvas を選択して **Plane Distance を 10** にします。これは Editor で作業するときのためです。
 ![](/images/plane-distance.png)
 
-Text (TMP) を選択し、アンカーの設定（Rect Transform コンポーネント左上の四角形）をクリックして、右下の青い十字の矢印（上下左右ストレッチ）を選択します。
+Text (TMP) を選択して、**アンカーの設定（Rect Transform コンポーネント左上の四角形）をクリック**して、**右下の青い十字の矢印（上下左右ストレッチ）を選択**します。
 ![](/images/change-anchor.png)
 
-そのまま Left, Top, Right, Bottom の値を 0 にします。
-これで Canvas 全体にテキストの領域が広がります。
+そのまま **Left, Top, Right, Bottom の値を 0** にします。
 ![](/images/position-0.png)
 
-Text (TMP) の Font Size を 70 にします。
+インスペクタをスクロールして **TextMeshPro - Text (UI)** コンポーネントの **Font Size を 70** にします。
 ![](/images/font-size.png)
 
-プログラムを実行して、左手首にちょうどよく時刻が表示されることを確認してください。
-必要に応じてオーバーレイの大きさや位置、フォントサイズなどを調整してください。
+プログラムを実行して、左手首に時刻が表示されることを確認してください。
+もし違和感があればオーバーレイの大きさや位置、フォントサイズなどを調整してください。
 ![](/images/show-time.jpg)
 
 ## 時計を動かす
-`Scripts/Watch.cs` を新規作成します。
+`Scripts` フォルダの下に `Watch.cs` を新規作成します。
 下記のコードをコピーしてください。
 
 ```cs:Watch.cs
@@ -398,7 +418,7 @@ public class Watch : MonoBehaviour
 }
 ```
 
-Text (TMP) に Watch.cs を追加します。
+シーン上の **Text (TMP)** に `Watch.cs` を追加します。
 ![](/images/watch-to-text.png)
 
 
@@ -406,13 +426,10 @@ Text (TMP) に Watch.cs を追加します。
 
 ![](/images/clock-check.jpg)
 
-これで VR ゲームに持ち込める腕時計ができました。
-時計の見た目は、通常の uGUI と同じように Canvas 上で編集できるので、デザインを変更してみてください。
 
 ## コードの整理
 
 ### オーバーレイの上下反転
-TODO: 反転を Graphics.Blit でやる
 `FlipOverlayVertical()` として関数に分けておきます。
 ```diff cs:WatchOverlay.cs
 private void Start()
@@ -449,7 +466,6 @@ private void Start()
 +        vMax = 0
 +    };
 +
-+    // overlayHandle -> handle に変数名を変更
 +    var error = OpenVR.Overlay.SetOverlayTextureBounds(handle, ref bounds);
 +    if (error != EVROverlayError.None)
 +    {
@@ -491,6 +507,8 @@ private void Update()
 
 + private void SetOverlayRenderTexture(ulong handle, RenderTexture renderTexture)
 + {
++     if (!renderTexture.IsCreated()) return;
++
 +     var nativeTexturePtr = renderTexture.GetNativeTexturePtr();
 +     var texture = new Texture_t
 +     {
@@ -509,9 +527,9 @@ private void Update()
 
 ### 最終的なコード
 ```cs: WatchOverlay.cs
-using System;
 using UnityEngine;
 using Valve.VR;
+using System;
 
 public class WatchOverlay : MonoBehaviour
 {
@@ -520,13 +538,13 @@ public class WatchOverlay : MonoBehaviour
     private ulong overlayHandle = OpenVR.k_ulOverlayHandleInvalid;
 
     [Range(0, 0.5f)] public float size;
-    [Range(-0.5f, 0.5f)] public float x;
-    [Range(-0.5f, 0.5f)] public float y;
-    [Range(-0.5f, 0.5f)] public float z;
+    [Range(-0.2f, 0.2f)] public float x;
+    [Range(-0.2f, 0.2f)] public float y;
+    [Range(-0.2f, 0.2f)] public float z;
     [Range(0, 360)] public int rotationX;
     [Range(0, 360)] public int rotationY;
     [Range(0, 360)] public int rotationZ;
-
+    
     private void Start()
     {
         InitOpenVR();
@@ -539,20 +557,24 @@ public class WatchOverlay : MonoBehaviour
 
     private void Update()
     {
+        var position = new Vector3(x, y, z);
+        var rotation = Quaternion.Euler(rotationX, rotationY, rotationZ);
         var leftControllerIndex = OpenVR.System.GetTrackedDeviceIndexForControllerRole(ETrackedControllerRole.LeftHand);
         if (leftControllerIndex != OpenVR.k_unTrackedDeviceIndexInvalid)
         {
-            var position = new Vector3(x, y, z);
-            var rotation = Quaternion.Euler(rotationX, rotationY, rotationZ);
             SetOverlayTransformRelative(overlayHandle, leftControllerIndex, position, rotation);
         }
 
         SetOverlayRenderTexture(overlayHandle, renderTexture);
     }
+    
+    private void OnApplicationQuit()
+    {
+        DestroyOverlay(overlayHandle);
+    }
 
     private void OnDestroy()
     {
-        DestroyOverlay(overlayHandle);
         ShutdownOpenVR();
     }
 
@@ -560,11 +582,11 @@ public class WatchOverlay : MonoBehaviour
     {
         if (OpenVR.System != null) return;
 
-        var initError = EVRInitError.None;
-        OpenVR.Init(ref initError, EVRApplicationType.VRApplication_Overlay);
-        if (initError != EVRInitError.None)
+        var error = EVRInitError.None;
+        OpenVR.Init(ref error, EVRApplicationType.VRApplication_Overlay);
+        if (error != EVRInitError.None)
         {
-            throw new Exception("OpenVRの初期化に失敗しました: " + initError);
+            throw new Exception("OpenVRの初期化に失敗しました: " + error);
         }
     }
 
@@ -592,16 +614,11 @@ public class WatchOverlay : MonoBehaviour
     {
         if (handle != OpenVR.k_ulOverlayHandleInvalid)
         {
-            OpenVR.Overlay.DestroyOverlay(handle);
-        }
-    }
-
-    private void ShowOverlay(ulong handle)
-    {
-        var error = OpenVR.Overlay.ShowOverlay(handle);
-        if (error != EVROverlayError.None)
-        {
-            throw new Exception("オーバーレイの表示に失敗しました: " + error);
+            var error = OpenVR.Overlay.DestroyOverlay(handle);
+            if (error != EVROverlayError.None)
+            {
+                throw new Exception("オーバーレイの破棄に失敗しました: " + error);
+            }
         }
     }
 
@@ -611,6 +628,15 @@ public class WatchOverlay : MonoBehaviour
         if (error != EVROverlayError.None)
         {
             throw new Exception("画像ファイルの描画に失敗しました: " + error);
+        }
+    }
+
+    private void ShowOverlay(ulong handle)
+    {
+        var error = OpenVR.Overlay.ShowOverlay(handle);
+        if (error != EVROverlayError.None)
+        {
+            throw new Exception("オーバーレイの表示に失敗しました: " + error);
         }
     }
 
@@ -644,7 +670,7 @@ public class WatchOverlay : MonoBehaviour
             throw new Exception("オーバーレイの位置設定に失敗しました: " + error);
         }
     }
-
+    
     private void FlipOverlayVertical(ulong handle)
     {
         var bounds = new VRTextureBounds_t
@@ -654,6 +680,7 @@ public class WatchOverlay : MonoBehaviour
             vMin = 1,
             vMax = 0
         };
+
         var error = OpenVR.Overlay.SetOverlayTextureBounds(handle, ref bounds);
         if (error != EVROverlayError.None)
         {
@@ -663,6 +690,8 @@ public class WatchOverlay : MonoBehaviour
     
     private void SetOverlayRenderTexture(ulong handle, RenderTexture renderTexture)
     {
+        if (!renderTexture.IsCreated()) return;
+        
         var nativeTexturePtr = renderTexture.GetNativeTexturePtr();
         var texture = new Texture_t
         {
