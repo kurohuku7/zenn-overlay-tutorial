@@ -402,4 +402,4 @@ public class WatchOverlay : MonoBehaviour
 ```
 
 OpenVR の初期化とクリーンアップはこれで完了です。
-次のページでは、初期化によって使えるようになった OpenVR Overlay API を使って、オーバーレイを作成していきます。
+次のページでは、初期化して使えるようになった OpenVR Overlay API を使って、オーバーレイを作成していきます。
