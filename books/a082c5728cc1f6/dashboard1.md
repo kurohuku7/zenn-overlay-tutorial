@@ -416,7 +416,7 @@ public class WatchOverlay : MonoBehaviour
 }
 ```
 
-## DashboardOverlay.cs へ初期化とクリーンアップを追加
+## OpenVR の初期化とクリーンアップを追加
 ユーティリティクラスの作成と `WatchOverlay.cs` の修正が終わったので `DashboardOverlay.cs` に戻ります。
 
 OpenVR の初期化とクリーンアップを呼び出します。
