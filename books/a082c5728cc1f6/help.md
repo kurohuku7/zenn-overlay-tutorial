@@ -28,19 +28,18 @@ https://github.com/ValveSoftware/steamvr_unity_plugin
 https://valvesoftware.github.io/steamvr_unity_plugin/api/index.html
 
 ## その他リポジトリ
-SteamVR オーバーレイアプリの中にはオープンソースで公開されているものもあります。
-
-例えば OVR Advanced Settings はオープンソースで開発されています。
-ツールを使っていて、ここはどうやってるんだろう？と思ったら、そのままソースコードが確認できるので非常に参考になります。
+[OVR Advanced Settings](https://store.steampowered.com/app/1009850/OVR_Advanced_Settings/) などオープンソースで開発されているプロジェクトは、参考になる部分が多いです。
 https://github.com/OpenVR-Advanced-Settings/OpenVR-AdvancedSettings
 
-その他にも色々なプロジェクトが公開されているので調べてみてください。
+:::details OVRAS 有料化について
+丁度、このチュートリアルを書いている最中の 2024-04-15 に、今後の継続的な開発を目的として上記の OVR Advanced Setting は Steam 上で有料化されました。公開されているソースコードが今後どうなるのかアナウンスが見つからなかったのですが、もしかすると時期によっては公開状況などが変わっているかもしれないので、各自でご確認いただければと思います。
+:::
 
 ## その他チュートリアル
 [VaNiiMenu](https://sabowl.sakura.ne.jp/gpsnmeajp/unity/vaniimenu/) や [EVMC4U](https://gpsnmeajp.github.io/EasyVirtualMotionCaptureForUnity-documents/)、[Virtual Motion Tracker](https://gpsnmeajp.github.io/VirtualMotionTrackerDocument/) などを開発されている Segment 氏が公開されている技術記事は、個人的に特に参考にさせて頂き、とても助かりました。OpenVR 関連の色々なソースコードや技術記事を公開されています。
 https://qiita.com/gpsnmeajp/items/421e3853465df3b1520b
 
-（余談ですが [VR 酔い対策ツール](https://store.steampowered.com/app/1393780/)を作り始めたときに、最初は OpenVR のリポジトリを見て C++ で開発しようとしたものの、公式のサンプルを動かすだけでも想像以上に手間取って「これは先が長いな...」と思っていた矢先、Segment 氏が公開されていた Unity のサンプルを見つけて試しに動かしてみたら、あまりにもあっさりと動かせてしまったので Unity に切り替えて開発することにした経緯があります。）
+（余談ですが VR 酔い対策ツールを作り始めたときに、最初は OpenVR のリポジトリを見て C++ で開発しようとしたものの、公式のサンプルを動かすだけでも想像以上に手間取って「これは先が長いな...」と思っていた矢先、Segment 氏が公開されていた Unity のサンプルを見つけて試しに動かしてみたら、あまりにもあっさりと動かせてしまったので Unity に切り替えて開発することにした経緯があります。）
 
 ## 3D オブジェクトを表示したい
 両目にそれぞれ視差のある画像を表示することで、オーバーレイで立体物を表示できます。
