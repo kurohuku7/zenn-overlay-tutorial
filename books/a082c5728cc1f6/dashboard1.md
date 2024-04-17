@@ -767,7 +767,7 @@ private void Start()
 }
 ```
 
-### 最終的なコード
+## 最終的なコード
 ```cs:DashboardOverlay.cs
 using UnityEngine;
 using Valve.VR;
