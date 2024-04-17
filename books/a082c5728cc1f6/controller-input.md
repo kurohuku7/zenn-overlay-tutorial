@@ -21,11 +21,13 @@ SteamVR の **Setting** を開きます。
 ![](/images/enable-debugging-options.png)
 
 ## Action Manifest の作成
-SteamVR Input では、あらかじめアプリ側で使用するアクションを作成しておき、SteamVR Input の設定画面でボタンやトリガー等とアクションを関連付けることで、アプリを操作します。
-プラットフォームレベルで用意されたキーコンフィグのようなイメージです。
+SteamVR Input では、直接ボタン等の入力は使用せず、アプリケーション側で定義したアクションが発生したかどうかで、入力を処理します。
+SteamVR Input の設定画面でコントローラの各種ボタンやジェスチャーと、アクションの対応付けを行います。
+プラットフォームレベルで用意された便利なキーコンフィグ機能のようなイメージです。
+![](/images/y-button-plus.png)
 
 まず、アプリケーションで使用するアクションを JSON 形式でリトアップした [Action Manifest](https://github.com/ValveSoftware/openvr/wiki/Action-manifest) を作成します。
-SteamVR Plugin には Action Manifest を簡単に作れる機能があるので、これを使います。
+SteamVR Plugin には Action Manifest を GUI 上で作れる機能があるので、これを使います。
 
 ### Action Manifest の生成
 Unity のメニューから **Window > SteamVR Input** を選択します。
@@ -35,11 +37,16 @@ Unity のメニューから **Window > SteamVR Input** を選択します。
 今回は一から作成するので **No** を選択します。
 ![](/images/create-default-actionmanifest.png)
 
-アクションセット名を **Watch** に変更し、その下のドロップダウンを **per hand** に変更します。
+**Action Sets** に **Watch** と入力し、その下のドロップダウンを **per hand** に変更します。
+アクションセットとは複数のアクションをまとめたもので、アプリケーションごとに複数登録できます。
 ![](/images/watch-action.png)
 
-下の方にある **Actions** の **In** というボックス内にある **NewAction** の文字クリックします。
-右側にアクションの詳細が表示されるので、**Name** を **WakeUp** に変更します。これが時計を表示状態に切り替えるためのアクションになります。
+**per hand** は、左手と右手のコントローラにそれぞれ異なるアクションを設定できます。
+**mirrored** は、片手のみにアクションを設定し、もう片方はそれを鏡写しにしたようにマッピングされます。
+
+下の方にある **Actions** の **In** というボックス内にあるアクション **NewAction** の名前をクリックします。
+右側にアクションの詳細が表示されるので、**Name** を **WakeUp** に変更します。
+これを時計を表示状態に切り替えるためのアクションとして使います。
 変更したら左下の **Save and generate** ボタンを押して Action Manifest を生成します。
 ![](/images/change-action-name.png)
 
@@ -65,17 +72,17 @@ Unity のメニューから **Window > SteamVR Input** を選択します。
 }
 ```
 
-## デフォルトバインディングの設定
+## デフォルトバインディングの作成
 右下の **Open binding UI** ボタンを押します。
 ![](/images/open-binding-ui.png)
 
-VR のコントローラが表示されない場合は、HMD を SteamVR に接続されているか確認してください。
+もし VR のコントローラが表示されない場合は、HMD が SteamVR に接続されているか確認してください。
 
 **Create New Binding** をクリックします。
 ![](/images/create-new-binding.png)
 
 Y ボタンを押したら時計が表示されるように設定します。
-接続されているコントローラによってボタンが異なるので、使用しているコントローラに合わせてボタンは変えてください。
+（ボタンは各自で使用しているコントローラに合わせて設定してください）
 
 **Y Button** の **+** をクリック
 ![](/images/y-button-plus.png)
@@ -96,19 +103,95 @@ Y ボタンを押したら時計が表示されるように設定します。
 **Save** をクリック
 ![](/images/save-binding.png)
 
-右上の × ボタンでバインディングの設定ウィンドウを閉じます。
+この時点で Action Manifest のデフォルトバインディングが自動的に追加されます。
+
+```diff json:actions.json
+{
+   "action_sets" : [
+      {
+         "name" : "/actions/Watch",
+         "usage" : "single"
+      }
+   ],
+   "actions" : [
+      {
+         "name" : "/actions/Watch/in/WakeUp",
+         "type" : "boolean"
+      }
+   ],
+   "default_bindings" : [
+      {
++        "binding_url" : "application_generated_unity_retryoverlay_exe_binding_oculus_touch.json",
++        "controller_type" : "oculus_touch"
+      }
+   ],
+   "localization" : []
+}
+
+```
+
+また、Action Manifest と同じディレクトリにデフォルトバインディングの設定ファイルが追加されます。プロジェクトをビルドしたときに、これらの設定ファイルが同梱されます。
+![](/images/default-binding-file.png)
+
+左上の **← BACK** をクリックして前の画面に戻ると、新しい設定が有効化されていることが確認できます。
+![](/images/binding-added.png)
+
+デフォルトバインディング設定が作成できたので、ウィンドウを閉じます。
+
 Unity の SteamVR Input のウィンドウも閉じます。
+このとき変更を保存するかのダイアログが表示されるのですが、**保存せずに Close を選択**してください。
+![](/images/close-binding-dialog.png)
+
+このチュートリアルを作成している環境だと、このタイミングで Save を押すと Action Manifest の `default_bindings` が空になっているデータで上書きされてしまうためです。
+（次回以降バインディング画面を開くときに出てくるダイアログで保存する際には問題ありませんでした。）
+
+:::details 他のコントローラのデフォルトバインディングは？
+バインディングの設定画面で、右側のコントローラ名をクリックすると、他のコントローラのバインディング設定も作れます。
+![](/images/click-controller.png)
+
+他のコントローラのデフォルトバインディングを作ると、Action Manifest の `default_bindings` に追加されます。
+```diff json
+{
+    "action_sets" : [
+       {
+          "name" : "/actions/NewSet",
+          "usage" : "leftright"
+       }
+    ],
+    "actions" : [
+       {
+          "name" : "/actions/NewSet/in/NewAction",
+          "type" : "boolean"
+       }
+    ],
+    "default_bindings" : [
+      {
+         "binding_url" : "application_generated_unity_steamvr_inputbindingtest_exe_binding_oculus_touch.json",
+         "controller_type" : "oculus_touch"
+      },
++     {
++        "binding_url" : "application_generated_unity_steamvr_inputbindingtest_exe_binding_vive_controller.json",
++        "controller_type" : "vive_controller"
++     }
+   ],
+   "localization" : []
+}
+```
+
+現在の SteamVR では、1 つデフォルトバインディングを作っておくと、他のコントローラは近いボタンに自動でリマップされる機能があるため、作成が必須というわけではないです。
+![](/images/remapped-binding.png)
+:::
 
 ### スクリプトの作成
 `Scripts` フォルダの下に `InputController.cs` を新規作成します。
-Hierarchy を**右クリック > CreateEmpty** して、オブジェクト名を `InputController` に変更します。
-Project ウィンドウから `InputController.cs` を `InputController` へドラッグしてスクリプトを追加します。
 このスクリプトにコントローラの入力関連の処理を書いていきます。
+
+Hierarchy を**右クリック > CreateEmpty** で空のオブジェクトを作成し、オブジェクト名を `InputController` に変更します。
+Project ウィンドウから `InputController.cs` を `InputController` へドラッグしてスクリプトを追加します。
 ![](/images/add-input-controller.png)
 
-### OpenVR の初期化、クリーンアップコードを追加
-`InputController.cs` を開き以下のコードをコピーします。
-OpenVR Input API を使うため、OpenVR の初期化をしておく必要があります。
+### OpenVR の初期化、クリーンアップを追加
+`InputController.cs` へ以下のコードをコピーします。
 ```cs:InputController.cs
 using System;
 using UnityEngine;
@@ -130,7 +213,7 @@ public class InputController : MonoBehaviour
 
 ## アクションマニフェストパスの指定
 アプリケーションの開始時に Action Manifest ファイルのパスを [SetActionManifestPath()](https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.CVRInput.html#Valve_VR_CVRInput_SetActionManifestPath_System_String_) で指定します。（詳細は [Wiki](https://github.com/ValveSoftware/openvr/wiki/SteamVR-Input#api-documentation) を参照）
-先ほど生成した **actions.json** が **StreamingAssets** に入っているので、そのパスを指定します。
+Action Manifest は **StreamingAssets/SteamVR/actions.json** に生成されているので、そのパスを指定します。
 
 ```diff cs:InputController.cs
 using System;
@@ -158,54 +241,91 @@ public class InputController : MonoBehaviour
 ```
 
 ## アクションセットハンドルの取得
-アクションセットのハンドルを [GetActionSetHandle()](https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.CVRInput.html#Valve_VR_CVRInput_GetActionSetHandle_System_String_System_UInt64__) で取得します。
-アプリケーションはいくつかのアクションをまとめたアクションセットを複数持つことができます。
-今回は `/actions/Watch` という 1 つのアクションセットのみ作成したので、そのハンドルを読み込みます。
+アプリケーションには複数のアクションをまとめたアクションセットをいくつか登録でき、どのアクションセットを使うかをハンドルで指定します。
+アクションセットのハンドルは [GetActionSetHandle()](https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.CVRInput.html#Valve_VR_CVRInput_GetActionSetHandle_System_String_System_UInt64__) で取得します。
+
+アクションセットは `/actions/[アクションセット名]` という文字列で指定します。
+今回の場合は `/actions/Watch` です。
+
 ```diff cs:InputController.cs
-void Start()
+public class InputController : MonoBehaviour
 {
-    OpenVRUtil.System.InitOpenVR();
-
-    var error = OpenVR.Input.SetActionManifestPath(Application.streamingAssetsPath + "/SteamVR/actions.json");
-    if (error != EVRInputError.None)
-    {
-        throw new Exception("Action Manifest パスの指定に失敗しました: " + error);
-    }
-
 +   ulong actionSetHandle = 0;
-+   error = OpenVR.Input.GetActionSetHandle("/actions/Watch", ref actionSetHandle);
-+   if (error != EVRInputError.None)
-+   {
-+       throw new Exception("アクションセット /actions/Watch の取得に失敗しました: " + error);
-+   }
-}
-```
 
-アクションセット名は、先ほど生成した actions.json にも記載されています。
-```json:actions.json
-{
-  "actions": [
+    private void Start()
     {
-      "name": "/actions/Watch/in/WakeUp",
-      "type": "boolean"
+        OpenVRUtil.System.InitOpenVR();
+
+        var error = OpenVR.Input.SetActionManifestPath(Application.streamingAssetsPath + "/SteamVR/actions.json");
+        if (error != EVRInputError.None)
+        {
+            throw new Exception("Action Manifest パスの指定に失敗しました: " + error);
+        }
+
++       error = OpenVR.Input.GetActionSetHandle("/actions/Watch", ref actionSetHandle);
++       if (error != EVRInputError.None)
++       {
++           throw new Exception("アクションセット /actions/Watch の取得に失敗しました: " + error);
++       }
     }
-  ],
-  "action_sets": [
+
+    private void Destroy()
     {
-      "name": "/actions/Watch",
-      "usage": "leftright"
+        OpenVRUtil.System.ShutdownOpenVR();
     }
-  ],
-  "default_bindings": [],
-  "localization": []
 }
 ```
 
 ## アクションハンドルの取得
-アクションセットに登録されている個々のアクションを [GetActionHandle()](https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.CVRInput.html#Valve_VR_CVRInput_GetActionHandle_System_String_System_UInt64__) で取得します。
-今回は `WakeUp` アクションのみなので、それを取得します。
+次はアクションのハンドルです。[GetActionHandle()](https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.CVRInput.html#Valve_VR_CVRInput_GetActionHandle_System_String_System_UInt64__) で取得します。
+アクションは `/actions/[アクションセット名]/in/[アクション名]` で指定します。
+今回の場合は `/actions/Watch/in/WakeUp` です。
 ```diff cs:InputController.cs
-void Start()
+public class InputController : MonoBehaviour
+{
+    ulong actionSetHandle = 0;
++   ulong actionHandle = 0;
+
+    private void Start()
+    {
+        OpenVRUtil.System.InitOpenVR();
+
+        var error = OpenVR.Input.SetActionManifestPath(Application.streamingAssetsPath + "/SteamVR/actions.json");
+        if (error != EVRInputError.None)
+        {
+            throw new Exception("Action Manifest パスの指定に失敗しました: " + error);
+        }
+
+        error = OpenVR.Input.GetActionSetHandle("/actions/Watch", ref actionSetHandle);
+        if (error != EVRInputError.None)
+        {
+            throw new Exception("アクションセット /actions/Watch の取得に失敗しました: " + error);
+        }
+
++       error = OpenVR.Input.GetActionHandle($"/actions/Watch/in/WakeUp", ref actionHandle);
++       if (error != EVRInputError.None)
++       {
++           throw new Exception("アクション /actions/Watch/in/WakeUp の取得に失敗しました: " + error);
++       }
+    }
+
+    private void Destroy()
+    {
+        OpenVRUtil.System.ShutdownOpenVR();
+    }
+}
+```
+
+## アクションの状態を更新
+各フレームの最初で、各アクションの入力状態を最新に更新します。
+
+### 更新するアクションセットの準備
+アクションの更新は、アクションセットの単位で指定します。
+複数のアクションセットを [VRActiveActionSet_t](https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.VRActiveActionSet_t.html) 型の配列として渡す形式になっています。
+今回はアクションセットが `/actions/Watch` だけなので、長さが 1 の `VRActionActiveSet_t[]` を作ります。
+
+```diff cs:InputController.cs
+private void Start()
 {
     OpenVRUtil.System.InitOpenVR();
 
@@ -215,46 +335,42 @@ void Start()
         throw new Exception("Action Manifest パスの指定に失敗しました: " + error);
     }
 
-    ulong actionSetHandle = 0;
     error = OpenVR.Input.GetActionSetHandle("/actions/Watch", ref actionSetHandle);
     if (error != EVRInputError.None)
     {
         throw new Exception("アクションセット /actions/Watch の取得に失敗しました: " + error);
     }
 
-+   ulong actionHandle = 0;
-+   error = OpenVR.Input.GetActionHandle($"/actions/Watch/in/WakeUp", ref actionHandle);
-+   if (error != EVRInputError.None)
-+   {
-+       throw new Exception("アクション /actions/Watch/in/WakeUp の取得に失敗しました: " + error);
-+   }
+    error = OpenVR.Input.GetActionHandle($"/actions/Watch/in/WakeUp", ref actionHandle);
+    if (error != EVRInputError.None)
+    {
+        throw new Exception("アクション /actions/Watch/in/WakeUp の取得に失敗しました: " + error);
+    }
 }
+
++ private void Update()
++ {
++     // 更新したいアクションセットのリスト
++     var actionSetList = new VRActiveActionSet_t[]
++     {
++         // 今回は Watch アクションセットのみ
++         new VRActiveActionSet_t()
++         {
++             // Watch アクションセットのハンドルを渡す
++             ulActionSet =  actionSetHandle,
++             ulRestrictedToDevice = OpenVR.k_ulInvalidInputValueHandle,
++         }
++     };
++ }
+
+ ～省略～
 ```
 
-## アクションの状態を更新
-### 更新するアクションセットの準備
-どのアクションセットの状態を取得するかを [VRActiveActionSet_t](https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.VRActiveActionSet_t.html) 型で準備します。
-更新するアクションセットの配列を作成します。今回はアクションセットが `/actions/Watch` だけを入れた配列になります。
-先ほど取得したアクションセットのハンドルを使用します。
-
-```diff cs:InputController.cs
-private void Update()
-{
-+   var actionSetList = new VRActiveActionSet_t[]
-+   {
-+       new VRActiveActionSet_t()
-+       {
-+           ulActionSet =  actionSetHandle,
-+           ulRestrictedToDevice = OpenVR.k_ulInvalidInputValueHandle,
-+       }
-+   };
-}
-```
-
-`ulRestrictedToDevice` は左右のコントローラに異なるアクションセットをバインドするときに使うもので、基本的に使わないので `k_ulInvalidInputValueHandle` をセットします。
+`ulRestrictedToDevice` は特定のデバイスからのみ入力できるようにするもので、左右のコントローラに異なるアクションセットをバインドするときなどに使われます。基本的には使わず `k_ulInvalidInputValueHandle` をセットします。
 
 ### 状態の更新
-作成したアクションセットのリストを `UpdateActionState()` に渡してアクションの入力状態を更新します。
+アクションの更新に使うのは [UpdateActionState()](https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.CVRInput.html) です。
+先ほど作ったアクションセットの配列を渡します。
 
 ```diff cs:InputController.cs
 private void Update()
@@ -267,8 +383,8 @@ private void Update()
             ulRestrictedToDevice = OpenVR.k_ulInvalidInputValueHandle,
         }
     };
+
 +   var activeActionSize = (uint)System.Runtime.InteropServices.Marshal.SizeOf(typeof(VRActiveActionSet_t));    
-+
 +   var error = OpenVR.Input.UpdateActionState(actionSetList, activeActionSize);
 +   if (error != EVRInputError.None)
 +   {
@@ -277,79 +393,24 @@ private void Update()
 }
 ```
 
-第 2 引数の `activeActionSize` には `VRActiveActionSet_t` の大きさ（バイト数）を渡します。
+第 2 引数の `activeActionSize` は `VRActiveActionSet_t` の構造体のサイズ（バイト数）です。
 
-## 入力値の取得
-アクションの状態を更新したら、現在の入力状態の値を取得します。
-アクションの値の種類によって取得に使用する関数が代わります。
+## アクションの値を取得
+アクションの状態を更新したら、各アクションの値を取得します。
+アクションの種類によって使用する関数が変わります。
 
-ボタンを押しているかどうかなどの On/Off の値を取るタイプのアクションは `GetDigitalActionData()`
-スティックの方向やトリガーの引き具合などのデータは `GetAnalogActionData()`
-コントローラの座標や角度などの姿勢情報をアクションとしている場合は `GetPoseActionData()`
+**GetDigitalActionData()**
+ボタンを押しているかどうかなどの On/Off の値を取るアクション
 
-を使います。
-今回はボタンの On/Off のアクションなので `GetDigitalActionData()` で値を取得します。
-先程取得した `WakeUp` アクションのハンドルを使って取得するアクションを指定します。
+**GetAnalogActionData()**
+スティックの方向やトリガーの引き具合などの連続的な値を取るアクション
 
-```diff cs:InputController.cs
-public class InputController : MonoBehaviour
-{
-    private ulong actionSetHandle = 0;
-    private ulong actionHandle = 0;
+**GetPoseActionData()**
+コントローラの位置や角度などの姿勢情報を取るアクション
 
-    private uint activeActionSize;
-+   private uint digitalActionSize;
 
-    ～省略～
-
-    private void Update()
-    {
-        var actionSetList = new VRActiveActionSet_t[]
-        {
-            new VRActiveActionSet_t()
-            {
-                ulActionSet =  actionSetHandle,
-                ulRestrictedToDevice = OpenVR.k_ulInvalidInputValueHandle,
-            }
-        };
-        
-        var error = OpenVR.Input.UpdateActionState(actionSetList, activeActionSize);
-        if (error != EVRInputError.None)
-        {
-            throw new Exception("アクションの状態の更新に失敗しました: " + error);
-        }
-        
-+       var result = new InputDigitalActionData_t();
-+       error = OpenVR.Input.GetDigitalActionData(actionHandle, ref result, digitalActionSize, OpenVR.k_ulInvalidInputValueHandle);
-+       if (error != EVRInputError.None)
-+       {
-+           throw new Exception("WakeUp アクションのデータ取得に失敗しました: " + error);
-+       }
-    }
-
-    ～省略～
-```
-
-`digitalActionSize` は `InputDigitalActionData_t` のサイズ（バイト数）です。
-結果は [InputDigitalActionData_t](https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.InputDigitalActionData_t.html) 型で取得されます。
-
-## ボタンが入力されたことを検出
-入力結果として取得できる `InputDigitalActionData_t` の中身を見てみます。
-
-```cpp
-struct InputDigitalActionData_t
-{
-	bool bActive;
-	VRInputValueHandle_t activeOrigin;
-	bool bState;
-	bool bChanged;
-	float fUpdateTime;
-};
-```
-
-ボタンが押されているかどうかが `bState` に入ります。
-ボタンの入力状態が変わったフレームのみ `bChanged` が `true` になります。
-これを使って、ボタンが押されたことを検出してみます。
+今回はボタンの On/Off なので `GetDigitalActionData()` で値を取得します。
+既に取得してある `WakeUp` アクションのハンドルを使います。
 
 ```diff cs:InputController.cs
 private void Update()
@@ -363,6 +424,60 @@ private void Update()
         }
     };
     
+    var activeActionSize = (uint)System.Runtime.InteropServices.Marshal.SizeOf(typeof(VRActiveActionSet_t));
+    var error = OpenVR.Input.UpdateActionState(actionSetList, activeActionSize);
+    if (error != EVRInputError.None)
+    {
+        throw new Exception("アクションの状態の更新に失敗しました: " + error);
+    }
+    
++   var result = new InputDigitalActionData_t();
++   var digitalActionSize = (uint)System.Runtime.InteropServices.Marshal.SizeOf(typeof(InputDigitalActionData_t));
++   error = OpenVR.Input.GetDigitalActionData(actionHandle, ref result, digitalActionSize, OpenVR.k_ulInvalidInputValueHandle);
++   if (error != EVRInputError.None)
++   {
++       throw new Exception("WakeUp アクションのデータ取得に失敗しました: " + error);
++   }
+}
+
+```
+
+第 3 引数の `digitalActionSize` は `InputDigitalActionData_t` 型の構造体のサイズ（バイト数）です。
+第 4 引数は `ulRestrictToDevice` で、基本的に使わないので `OpenVR.k_ulInvalidInputValueHandl` をセットします。
+
+取得結果は [InputDigitalActionData_t](https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.InputDigitalActionData_t.html) 型です。
+
+## アクションが実行されたか判定
+`GetDigitalActionData()` で取得される `InputDigitalActionData_t` 型を見てみます。
+
+```cpp
+struct InputDigitalActionData_t
+{
+	bool bActive;
+	VRInputValueHandle_t activeOrigin;
+	bool bState;
+	bool bChanged;
+	float fUpdateTime;
+};
+```
+
+アクションの On/Off 状態が `bState` に入ります。
+On/Off が切り替わったフレームのみ `bChanged` が `true` になります。
+これらを使ってアクションが実行されたことを判定します。
+
+```diff cs:InputController.cs
+private void Update()
+{
+    var actionSetList = new VRActiveActionSet_t[]
+    {
+        new VRActiveActionSet_t()
+        {
+            ulActionSet =  actionSetHandle,
+            ulRestrictedToDevice = OpenVR.k_ulInvalidInputValueHandle,
+        }
+    };
+    
+    var activeActionSize = (uint)System.Runtime.InteropServices.Marshal.SizeOf(typeof(VRActiveActionSet_t));
     var error = OpenVR.Input.UpdateActionState(actionSetList, activeActionSize);
     if (error != EVRInputError.None)
     {
@@ -370,6 +485,7 @@ private void Update()
     }
     
     var result = new InputDigitalActionData_t();
+    var digitalActionSize = (uint)System.Runtime.InteropServices.Marshal.SizeOf(typeof(InputDigitalActionData_t));
     error = OpenVR.Input.GetDigitalActionData(actionHandle, ref result, digitalActionSize, OpenVR.k_ulInvalidInputValueHandle);
     if (error != EVRInputError.None)
     {
@@ -378,7 +494,7 @@ private void Update()
 
 +   if (result.bState && result.bChanged)
 +   {
-+       Debug.Log("ボタンが押されました");
++       Debug.Log("WakeUp が実行されました");
 +   }
 }
 ```
@@ -388,18 +504,21 @@ private void Update()
 
 ## イベントの作成
 
-### Unity Event の作成
-`InputController.cs` に WakeUp アクションが実行されたことを通知するイベントを作成します。
+### Unity Event への通知
+`InputController.cs` に `WakeUp` アクションが実行されたことを通知するための `UnityEvent` を作成し、`Invoke()` で呼び出します。
 
 ```diff cs:InputController.cs
+using System;
+using UnityEngine;
+using Valve.VR;
++ using using UnityEngine.Events;
+
 public class InputController : MonoBehaviour
 {
-+   public UnityEvent OnWakeUpClick; 
++   public UnityEvent OnWakeUp; 
     
     private ulong actionSetHandle = 0;
     private ulong actionHandle = 0;
-    private uint activeActionSize;
-    private uint digitalActionSize;
 
     ～省略～
 
@@ -414,6 +533,7 @@ public class InputController : MonoBehaviour
             }
         };
         
+        var activeActionSize = (uint)System.Runtime.InteropServices.Marshal.SizeOf(typeof(VRActiveActionSet_t));
         var error = OpenVR.Input.UpdateActionState(actionSetList, activeActionSize);
         if (error != EVRInputError.None)
         {
@@ -421,6 +541,7 @@ public class InputController : MonoBehaviour
         }
         
         var result = new InputDigitalActionData_t();
+        var digitalActionSize = (uint)System.Runtime.InteropServices.Marshal.SizeOf(typeof(InputDigitalActionData_t));
         error = OpenVR.Input.GetDigitalActionData(actionHandle, ref result, digitalActionSize, OpenVR.k_ulInvalidInputValueHandle);
         if (error != EVRInputError.None)
         {
@@ -429,42 +550,36 @@ public class InputController : MonoBehaviour
 
         if (result.bState && result.bChanged)
         {
--           Debug.Log("ボタンが押されました");
-+           OnWakeUpClick.Invoke();
+-           Debug.Log("WakeUp が実行されました");
++           OnWakeUp.Invoke();
         }
     }
 ```
 
 ### イベントの割り当て
-`WatchOverlay.cs` で WakeUp アクションが実行されたときの処理を作成します。
+時計のオーバーレイ `WatchOverlay.cs` で `WakeUp` アクションが実行されたときに呼ばれるメソッドを作ります。
 ```diff cs:WatchOverlay.cs
-using System;
-using UnityEngine;
-using Valve.VR;
-using OpenVRUtil;
-
 public class WatchOverlay : MonoBehaviour
 {
-    public Camera camera;
-    public RenderTexture renderTexture;
-    public ETrackedControllerRole targetHand = ETrackedControllerRole.RightHand;
 
     ～省略～
 
-+   public void OnWakeUpClick()
++   public void OnWakeUp()
 +   {
 +       // 時計を表示する処理
 +   }
 }
 ```
 
-Unity のインスペクタで `InputController` の `OnWakeUpClick()` に `WatchOverlay` の `OnWakeUpClick()` を設定します。
+Hierarchy で `InputController` のインスペクタを開き `OnWakeUp()` に `WatchOverlay` の `OnWakeUp()` を設定します。
 ![](/images/attach-onwakeup-event.png)
 
 
-## 時計を非表示に変更
+## 時計の表示・非表示処理を作成
+`WakeUp` アクションが発生したときだけ表示されるように `WatchOverlay.cs` を編集します。
+
 ### 初期状態を非表示にする
-`ShowOverlay()` を削除して時計のオーバーレイを非表示にします。
+`Start()` から `ShowOverlay()` を削除して、オーバーレイを非表示にします。
 ```diff cs:WatchOverlay.cs
 private void Start()
 {
@@ -477,17 +592,17 @@ private void Start()
 }
 ```
 
-### ボタンが押されたら表示する
+### WakeUp が実行されたら表示する
 WakeUp アクションが実行されたらオーバーレイを表示します。
 ```diff cs:WatchOverlay.cs
-public void OnWakeUpClick()
+public void OnWakeUp()
 {
 +   Overlay.ShowOverlay(overlayHandle);
 }
 ```
 
 ### 非表示にする関数を追加
-`OpenVRUtil.cs` に `HideOverlay()` を追加します。
+`OpenVRUtil.cs` に `HideOverlay()` を作成します。
 ```diff cs:OpenVRUtil.cs
 public static void ShowOverlay(ulong handle)
 {
@@ -519,7 +634,8 @@ public static void SetOverlayFromFile(ulong handle, string path)
 
 
 ### 一定時間後に非表示にする
-3 秒後に非表示にします。ここでは [Croutine](https://docs.unity3d.com/Manual/Coroutines.html) を使って非表示処理を作成します。
+`WakeUp` で表示したあと、3 秒後に非表示にする処理を作ります。
+今回は Unity の [Croutine](https://docs.unity3d.com/Manual/Coroutines.html) を使って 3 秒待つ処理を作ります。
 ```diff cs:WatchOverlay.cs
 using System;
 + using System.Collections;
@@ -532,27 +648,26 @@ public class WatchOverlay : MonoBehaviour
     public Camera camera;
     public RenderTexture renderTexture;
     public ETrackedControllerRole targetHand = ETrackedControllerRole.RightHand;
-
     private ulong overlayHandle = OpenVR.k_ulOverlayHandleInvalid;
-+   private Coroutine sleepAfterWaitCoroutine;    
++   private Coroutine sleepCoroutine;
 
     ～省略～
 
-    public void OnWakeUpClick()
+    public void OnWakeUp()
     {
         Overlay.ShowOverlay(overlayHandle);
-        if (sleepAfterWaitCoroutine != null)
-        {
-            StopCoroutine(sleepAfterWaitCoroutine);
-        }
-        sleepAfterWaitCoroutine = StartCoroutine(SleepAfterWait());
++       if (sleepCoroutine != null)
++       {
++           StopCoroutine(sleepCoroutine);
++       }
++       sleepCoroutine = StartCoroutine(Sleep());
     }
 
-    private IEnumerator SleepAfterWait()
-    {
-        yield return new WaitForSeconds(3);
-        Overlay.HideOverlay();
-    }
++   private IEnumerator Sleep()
++   {
++       yield return new WaitForSeconds(3);
++       Overlay.HideOverlay(overlayHandle);
++   }
 }
 ```
 
@@ -560,9 +675,10 @@ public class WatchOverlay : MonoBehaviour
 ![](/images/3sec-display.gif)
 
 ## 完成
-これでチュートリアルの時計アプリは完成です！
+これで時計アプリは完成です！
+チューと有りあるはここまでなので、最後のコード整理はお任せします。
 
-ここまで
+ここまでの内容を振り返ってみると
 
 - OpenVR の初期化
 - オーバーレイの作成
@@ -571,8 +687,10 @@ public class WatchOverlay : MonoBehaviour
 - デバイス追従
 - カメラ映像の表示
 - ダッシュボードの作成
+- イベントの処理
 - コントローラの操作
 
-と、オーバーレイアプリ開発に必要となりそうな、基本的なところは押さえられているかなと思います。
+と、オーバーレイアプリケーション開発の入門的なところは押さえられたかなと思います。
+OpenVR には他にも色々な API があるので、何ができそうか調べつつ VR ゲームに持ち込めるオリジナルツールの開発に挑戦してみてはいかがでしょうか。
 
-次のページでは、更に詳しく調べる際にどこを見ればよいかなど、参考情報をまとめてあります。次は VR ゲームに持ち込めるオリジナルの便利ツールを作ってみてください。
+次のページでは、更に詳しく調べる際にどこを見ればよいかなど、参考情報をまとめてあります。
