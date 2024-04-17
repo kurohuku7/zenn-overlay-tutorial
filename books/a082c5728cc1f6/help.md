@@ -3,45 +3,52 @@ title: "その他の情報"
 free: false
 ---
 
+更に詳しい情報がほしいと気にどこを見るべきか、ざっくりですが思いつくところをまとめておきます。
+
 ## OpenVR リポジトリ
+OpenVR の公式リポジトリが最も重要になります。
+
+https://github.com/ValveSoftware/openvr
+
+まずは Wiki を読むところから始めてみると良いと思います。
 https://github.com/ValveSoftware/openvr/wiki/API-Documentation
 
 
 Wiki に書かれていない詳細な情報は C++ のヘッダファイルにコメントで書かれていることが多いです。こういう機能ないかな？と思ったら、とりあえずヘッダファイルを探ってみるのが良いと思います。
 [https://github.com/ValveSoftware/openvr/blob/master/headers/openvr.h](https://github.com/ValveSoftware/openvr/blob/master/headers/openvr.h)
 
+その他、わからないことがあれば issue を探ってみてください。
+https://github.com/ValveSoftware/openvr/issues
+
 ## SteamVR Unity Plugin リポジトリ
-OpenVR には含まれていない Unity 向けのユーティリティが入っていたりします。
+Unity 向けのユーティリティが入っていたりします。
 https://github.com/ValveSoftware/steamvr_unity_plugin
+
+こちらがドキュメントです。
 https://valvesoftware.github.io/steamvr_unity_plugin/api/index.html
 
 ## その他リポジトリ
 SteamVR オーバーレイアプリの中にはオープンソースで公開されているものもあります。
 
-例えば SteamVR ユーザならお馴染みの OVR Advanced Settings はオープンソースで開発されています。
+例えば OVR Advanced Settings はオープンソースで開発されています。
+ツールを使っていて、ここはどうやってるんだろう？と思ったら、そのままソースコードが確認できるので非常に参考になります。
 https://github.com/OpenVR-Advanced-Settings/OpenVR-AdvancedSettings
 
-OVRDrop の前身 OpenVRDesktopDisplayPortal も Unity のプロジェクトがオープンソースとして公開されています。
-https://github.com/Hotrian/OpenVRDesktopDisplayPortal
-
-他にも参考になるプロジェクトが色々あるので探してみてください。
+その他にも色々なプロジェクトが公開されているので調べてみてください。
 
 ## その他チュートリアル
-[VaNiiMenu](https://sabowl.sakura.ne.jp/gpsnmeajp/unity/vaniimenu/) や [EVMC4U](https://gpsnmeajp.github.io/EasyVirtualMotionCaptureForUnity-documents/)、[Virtual Motion Tracker](https://gpsnmeajp.github.io/VirtualMotionTrackerDocument/) 等を開発されている Segment 氏が公開されている記事は特に参考になりました。
+[VaNiiMenu](https://sabowl.sakura.ne.jp/gpsnmeajp/unity/vaniimenu/) や [EVMC4U](https://gpsnmeajp.github.io/EasyVirtualMotionCaptureForUnity-documents/)、[Virtual Motion Tracker](https://gpsnmeajp.github.io/VirtualMotionTrackerDocument/) などを開発されている Segment 氏が公開されている技術記事は、個人的に特に参考にさせて頂き、とても助かりました。OpenVR 関連の色々なソースコードや技術記事を公開されています。
 https://qiita.com/gpsnmeajp/items/421e3853465df3b1520b
 
-（余談ですが [VR 酔い対策ツール](https://store.steampowered.com/app/1393780/)を作った際に、最初は OpenVR のリポジトリを見て C++ で開発しようとしたものの、公式のサンプルを動かすだけでも想像以上に手間取って「これは先が長いな...」と思っていた矢先、Segment 氏が公開されていた Unity のサンプルを見つけて試しに動かしてみたら、あっさりと動かせてしまったので Unity で開発することにした経緯があります。）
-
-## HMD に表示されている画像を取得したい
-`OpenVR.Compositor.GetMirrorTextureD3D11()` や `GetMirrorTextureGL()` で取得できます。
+（余談ですが [VR 酔い対策ツール](https://store.steampowered.com/app/1393780/)を作り始めたときに、最初は OpenVR のリポジトリを見て C++ で開発しようとしたものの、公式のサンプルを動かすだけでも想像以上に手間取って「これは先が長いな...」と思っていた矢先、Segment 氏が公開されていた Unity のサンプルを見つけて試しに動かしてみたら、あまりにもあっさりと動かせてしまったので Unity に切り替えて開発することにした経緯があります。）
 
 ## 3D オブジェクトを表示したい
-両目に視差のある画像を表示することで、オーバーレイで立体物を表示できます。
-例えば VR ペイントアプリの [Vermillion](https://store.steampowered.com/app/1608400/Vermillion__VR_Painting/) は、オーバーレイとして 3D オブジェクトを表示できる機能があり、任意の VR ゲームへ画材を持ち込めるようになっています。
+両目にそれぞれ視差のある画像を表示することで、オーバーレイで立体物を表示できます。
+例えば VR ペイントアプリの [Vermillion](https://store.steampowered.com/app/1608400/Vermillion__VR_Painting/) は、オーバーレイとして 3D オブジェクトを表示できる機能があり、VR ゲームへ画材を持ち込めるようになっています。
 https://youtu.be/udc1i97KPLY?si=pZ_Y5mJG2LyYVo9w
 
-チュートリアル本文のような十分な情報は準備できていないのですが、取り急ぎ知っている手法をざっくりまとめておきます。
-※下記は詳細に試していないものもあるので、間違いを含む可能性が高めです。使用する際は改めて他の情報にも当たってみてください。
+十分な情報は準備できていないのですが、今知っている手法をざっくりまとめておきます。
+※下記はしっかり検証していないものもあるので、間違いを含む可能性が高めです。
 
 ### 手法1: SideBySide
 `SetOverlayFlags()` で `VROverlayFlags_SideBySide_Parallel` を指定することで、SideBySide 画像を表示できます。
@@ -62,7 +69,10 @@ https://x.com/kurohuku7/status/1566307113697423360
 単純な形状であれば、力技で複数のオーバーレイを組み合わせて立体物を表示する方法もあります。
 6 枚のオーバーレイを使って Cube を作ったり、`SetOverlayCurvature()` を使ってオーバーレイを湾曲させたり、筒状に丸めることも可能です。
 [OVR Locomotion Effect](https://store.steampowered.com/app/1393780/) では、グリッドの空間を表示するために 6 枚の巨大なオーバーレイでプレイヤーを閉じ込める方法で、立体的な空間を作っています。
-また、風のエフェクトは円筒状に丸めたオーバーレイの中に HMD が入るように配置することで、立体的に見えるような風を表現しています。
+また、風のエフェクトは円筒状に丸めたオーバーレイの中に HMD が入るように配置することで、立体的に見える風を表現しています。
 https://youtu.be/vv-e_6-vjiE?si=JMYUDWER3vI6ujZm
 
 立体視については、`openvr.h` 内を `stereo` や `sidebyside` で検索すると手がかりが出てきます。
+
+## HMD に表示されている画像を取得したい
+`OpenVR.Compositor.GetMirrorTextureD3D11()` や `GetMirrorTextureGL()` で取得できます。
