@@ -307,18 +307,18 @@ private void Update()
 ![](/images/click-dashboard.jpg)
 *マウスポインタをオーバーレイに合わせてクリック*
 
-:::details EVREventType.VREvent_MouseClick は？
+:::details EVREventType.VREvent_MouseClick はない？
 ありません。
 
-OpenVR のマウスイベントは `MouseButtonDown`, `MouseButtonUp`, `MousMove` の 3 つです。
-OnClick を作るなら MouseDown と MouseUp を組み合わせて「MouseUp 発生時に MouseDown 発生時と同じ要素にマウスが乗っていたらクリックしたとする」といったような処理を作る必要があります。
+OpenVR Overlay のマウスイベントはシンプルで `MouseButtonDown`, `MouseButtonUp`, `MousMove` の 3 つです。
+OnClick を作るなら MouseDown と MouseUp を組み合わせて「MouseUp 発生時に MouseDown 発生時と同じ要素にマウスが乗っていたらクリックしたとする」というような処理を作ります。
 
-OnMouseEnter、OnMouseLeave、OnDrag なども上の 3 つを組み合わせて作ります。
-スライダーなどを作ろうとすると Unity で作るよりもやることが多いです。
+OnMouseEnter、OnMouseLeave、OnDrag なども、上の 3 つを組み合わせて作ります。
+スライダーなどを作ろうとすると Unity UI のみで作るよりも、少し手間がかかります。
 
-:::details もっと簡単に作りたいな...
-いいニュースがあります。
-ドラッグ＆ドロップで構築できるオシャレなダッシュボード用 UI アセットを Asset Store で販売予定なので、乞うご期待。
+:::details そこを何とかならないでしょうか？
+ドラッグ＆ドロップで構築できる SteamVR ダッシュボード用 UI アセットを Unity Asset Store で販売予定です。公開時は [@kurohuku7](https://twitter.com/kurohuku7) で通知するので、もしご興味があればフォローしておいて頂けるとありがたいです。
+https://youtu.be/ThazUiFG8qs
 :::
 
 
