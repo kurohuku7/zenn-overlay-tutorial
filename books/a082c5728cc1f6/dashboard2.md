@@ -318,7 +318,7 @@ OnMouseEnter、OnMouseLeave、OnDrag なども、上の 3 つを組み合わせ�
 
 :::details そこを何とかならないでしょうか？
 ドラッグ＆ドロップで構築できる SteamVR ダッシュボード用 UI アセットを Unity Asset Store で販売予定です。公開時は [@kurohuku7](https://twitter.com/kurohuku7) で通知するので、もしご興味があればフォローしておいて頂けるとありがたいです。
-https://youtu.be/ThazUiFG8qs
+https://youtu.be/JHFiPjIXEsE
 :::
 
 
