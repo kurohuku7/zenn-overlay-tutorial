@@ -1001,7 +1001,7 @@ namespace OpenVRUtil
             var error = OpenVR.Overlay.CreateDashboardOverlay(key, name, ref dashboardHandle, ref thumbnailHandle);
             if (error != EVROverlayError.None)
             {
-                throw new Exception("ダッシュボード‐バーレイの作成に失敗しました: " + error);
+                throw new Exception("ダッシュボードオーバーレイの作成に失敗しました: " + error);
             }
  
             return (dashboardHandle, thumbnailHandle);

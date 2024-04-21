@@ -441,7 +441,7 @@ public class DashboardOverlay : MonoBehaviour
         var error = OpenVR.Overlay.CreateDashboardOverlay("WatchDashboardKey", "Watch Setting", ref dashboardHandle, ref thumbnailHandle);
         if (error != EVROverlayError.None)
         {
-            throw new Exception("ダッシュボード‐バーレイの作成に失敗しました: " + error);
+            throw new Exception("ダッシュボードオーバーレイの作成に失敗しました: " + error);
         }
     }
 
@@ -468,7 +468,7 @@ public class DashboardOverlay : MonoBehaviour
         var error = OpenVR.Overlay.CreateDashboardOverlay("WatchDashboardKey", "Watch Setting", ref dashboardHandle, ref thumbnailHandle);
         if (error != EVROverlayError.None)
         {
-            throw new Exception("ダッシュボード‐バーレイの作成に失敗しました: " + error);
+            throw new Exception("ダッシュボードオーバーレイの作成に失敗しました: " + error);
         }
     }
 
@@ -499,7 +499,7 @@ private void Start()
     var error = OpenVR.Overlay.CreateDashboardOverlay("WatchDashboardKey", "Watch Setting", ref dashboardHandle, ref thumbnailHandle);
     if (error != EVROverlayError.None)
     {
-        throw new Exception("ダッシュボード‐バーレイの作成に失敗しました: " + error);
+        throw new Exception("ダッシュボードオーバーレイの作成に失敗しました: " + error);
     }
 
 +   var filePath = Application.streamingAssetsPath + "/sns-icon.jpg";
@@ -653,7 +653,7 @@ public class DashboardOverlay : MonoBehaviour
         var error = OpenVR.Overlay.CreateDashboardOverlay("WatchDashboardKey", "Watch Setting", ref dashboardHandle, ref thumbnailHandle);
         if (error != EVROverlayError.None)
         {
-            throw new Exception("ダッシュボード‐バーレイの作成に失敗しました: " + error);
+            throw new Exception("ダッシュボードオーバーレイの作成に失敗しました: " + error);
         }
 
         var filePath = Application.streamingAssetsPath + "/sns-icon.jpg";
@@ -684,7 +684,7 @@ public class DashboardOverlay : MonoBehaviour
         var error = OpenVR.Overlay.CreateDashboardOverlay("WatchDashboardKey", "Watch Setting", ref dashboardHandle, ref thumbnailHandle);
         if (error != EVROverlayError.None)
         {
-            throw new Exception("ダッシュボード‐バーレイの作成に失敗しました: " + error);
+            throw new Exception("ダッシュボードオーバーレイの作成に失敗しました: " + error);
         }
 
         var filePath = Application.streamingAssetsPath + "/sns-icon.jpg";
@@ -737,7 +737,7 @@ public static ulong CreateOverlay(string key, string name)
 +     var error = OpenVR.Overlay.CreateDashboardOverlay(key, name, ref dashboardHandle, ref thumbnailHandle);
 +     if (error != EVROverlayError.None)
 +     {
-+         throw new Exception("ダッシュボード‐バーレイの作成に失敗しました: " + error);
++         throw new Exception("ダッシュボードオーバーレイの作成に失敗しました: " + error);
 +     }
 + 
 +     return (dashboardHandle, thumbnailHandle);
@@ -755,7 +755,7 @@ private void Start()
 -   var error = OpenVR.Overlay.CreateDashboardOverlay("WatchDashboardKey", "Watch Setting", ref dashboardHandle, ref thumbnailHandle);
 -   if (error != EVROverlayError.None)
 -   {
--       throw new Exception("ダッシュボード‐バーレイの作成に失敗しました: " + error);
+-       throw new Exception("ダッシュボードオーバーレイの作成に失敗しました: " + error);
 -   }
 +   (dashboardHandle, thumbnailHandle) = Overlay.CreateDashboardOverlay("WatchDashboardKey", "Watch Setting");
 
@@ -861,7 +861,7 @@ namespace OpenVRUtil
             var error = OpenVR.Overlay.CreateDashboardOverlay(key, name, ref dashboardHandle, ref thumbnailHandle);
             if (error != EVROverlayError.None)
             {
-                throw new Exception("ダッシュボード‐バーレイの作成に失敗しました: " + error);
+                throw new Exception("ダッシュボードオーバーレイの作成に失敗しました: " + error);
             }
  
             return (dashboardHandle, thumbnailHandle);
