@@ -12,19 +12,19 @@ free: false
 ```diff cs:WatchOverlay.cs
 private void Start()
 {
-        InitOpenVR();
-        overlayHandle = CreateOverlay("WatchOverlayKey", "WatchOverlay");
+    InitOpenVR();
+    overlayHandle = CreateOverlay("WatchOverlayKey", "WatchOverlay");
 
-        var filePath = Application.streamingAssetsPath + "/sns-icon.jpg";
-        SetOverlayFromFile(overlayHandle, filePath);
+    var filePath = Application.streamingAssetsPath + "/sns-icon.jpg";
+    SetOverlayFromFile(overlayHandle, filePath);
         
-        SetOverlaySize(overlayHandle, 0.5f);
+    SetOverlaySize(overlayHandle, 0.5f);
 
--       var position = new Vector3(0, 2, 3);
--       var rotation = Quaternion.Euler(0, 0, 45);
--       SetOverlayTransformAbsolute(overlayHandle, position, rotation);
+-   var position = new Vector3(0, 2, 3);
+-   var rotation = Quaternion.Euler(0, 0, 45);
+-   SetOverlayTransformAbsolute(overlayHandle, position, rotation);
         
-        ShowOverlay(overlayHandle);
+    ShowOverlay(overlayHandle);
 
 ```
 
