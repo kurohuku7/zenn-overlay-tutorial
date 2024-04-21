@@ -414,7 +414,7 @@ HMD を被らずにイベントの動作確認をするときには Overlay View
 Canvas の [Graphic Raycaster](https://docs.unity3d.com/Packages/com.unity.ugui@1.0/api/UnityEngine.UI.GraphicRaycaster.html) を使って、クリックされた座標にある要素を取得します。
 
 ### Graphic Raycaster を取得
-`DashboardOverlay.cs` に `GraphicRaycaster` の変数を追加します。
+`DashboardOverlay.cs` に `graphicRaycaster` 変数を追加します。
 ```diff cs:DashboardOverlay.cs
 using UnityEngine;
 using Valve.VR;
