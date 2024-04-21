@@ -379,37 +379,37 @@ private void Update()
 途中でコントローラが接続・切断される場合に対応するため、Device Index の取得と位置指定を `Start()` から `Update()` の中に移動します。
 
 ```diff cs:WatchOverlay.cs
-    private void Start()
-    {
-        InitOpenVR();
-        overlayHandle = CreateOverlay("WatchOverlayKey", "WatchOverlay");
+private void Start()
+{
+    InitOpenVR();
+    overlayHandle = CreateOverlay("WatchOverlayKey", "WatchOverlay");
 
--       var position = new Vector3(x, y, z);
--       var rotation = Quaternion.Euler(rotationX, rotationY, rotationZ);
--       var leftControllerIndex = OpenVR.System.GetTrackedDeviceIndexForControllerRole(ETrackedControllerRole.LeftHand);
--       if (leftControllerIndex != OpenVR.k_unTrackedDeviceIndexInvalid)
--       {
--           SetOverlayTransformRelative(overlayHandle, leftControllerIndex, position, rotation);
--       }
+-   var position = new Vector3(x, y, z);
+-   var rotation = Quaternion.Euler(rotationX, rotationY, rotationZ);
+-   var leftControllerIndex = OpenVR.System.GetTrackedDeviceIndexForControllerRole(ETrackedControllerRole.LeftHand);
+-   if (leftControllerIndex != OpenVR.k_unTrackedDeviceIndexInvalid)
+-   {
+-       SetOverlayTransformRelative(overlayHandle, leftControllerIndex, position, rotation);
+-   }
 
-        var filePath = Application.streamingAssetsPath + "/sns-icon.jpg";
-        SetOverlayFromFile(overlayHandle, filePath);
+    var filePath = Application.streamingAssetsPath + "/sns-icon.jpg";
+    SetOverlayFromFile(overlayHandle, filePath);
 
-        SetOverlaySize(overlayHandle, size);
+    SetOverlaySize(overlayHandle, size);
 
-        ShowOverlay(overlayHandle);
-    }
+    ShowOverlay(overlayHandle);
+}
 
-+   private void Update()
++ private void Update()
++ {
++   var position = new Vector3(x, y, z);
++   var rotation = Quaternion.Euler(rotationX, rotationY, rotationZ);
++   var leftControllerIndex = OpenVR.System.GetTrackedDeviceIndexForControllerRole(ETrackedControllerRole.LeftHand);
++   if (leftControllerIndex != OpenVR.k_unTrackedDeviceIndexInvalid)
 +   {
-+       var position = new Vector3(x, y, z);
-+       var rotation = Quaternion.Euler(rotationX, rotationY, rotationZ);
-+       var leftControllerIndex = OpenVR.System.GetTrackedDeviceIndexForControllerRole(ETrackedControllerRole.LeftHand);
-+       if (leftControllerIndex != OpenVR.k_unTrackedDeviceIndexInvalid)
-+       {
-+           SetOverlayTransformRelative(overlayHandle, leftControllerIndex, position, rotation);
-+       }
++       SetOverlayTransformRelative(overlayHandle, leftControllerIndex, position, rotation);
 +   }
++ }
 ```
 
 これで途中でコントローラが接続・切断されても動作するようになります。
