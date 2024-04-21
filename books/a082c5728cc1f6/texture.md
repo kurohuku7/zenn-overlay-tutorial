@@ -291,7 +291,7 @@ private void Update()
 +   var error = OpenVR.Overlay.SetOverlayTexture(overlayHandle, ref texture);
 +   if (error != EVROverlayError.None)
 +   {
-+       throw new Exception($"テクスチャの描画に失敗しました: " + error);
++       throw new Exception("テクスチャの描画に失敗しました: " + error);
 +   }
 }
 ```
