@@ -57,7 +57,7 @@ Unity 上で左目用と右目用のカメラを 2 つ作成して、それぞ�
 ### 手法2: Stereo Panorama
 `SetOverlayFlag()` で `VROverlayFlags_StereoPanorama` を指定すると Stereo Panorama が使えます。
 こちらも 1 枚の画像を左目用と右目用の領域に分けて立体視を実現できます。
-上で紹介した Vermillion はこれで実装したらしいです。
+上で紹介した [Vermillion はこれで実装したらしい](https://x.com/thmsvdberg/status/1655997759160287232)です。
 
 ### 手法3: Overlay Projection
 `SetOverlayTransformProjection()` を使うと左目だけ、または右目だけに表示されるオーバーレイを作れます。
