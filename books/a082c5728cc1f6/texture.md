@@ -306,7 +306,7 @@ private void Update()
 テクスチャの UV 座標系が、Unity は左下が原点で V 軸が上向き、DirectX は左上が原点で V 軸が下向きのため、最終的に OpenVR が描画した結果が上下逆さまになっています。
 https://docs.unity3d.com/ja/current/Manual/SL-PlatformDifferences.html
 
-正しい向きに直す方法は色々ありますが、今回は OpenVR の [SetOverlayTextureBounds()](https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.CVROverlay.html#Valve_VR_CVROverlay_SetOverlayTextureBounds_System_UInt64_Valve_VR_VRTextureBounds_t__) でテクスチャの V 軸を逆にして割り当てるすることで上下を反転させます。（詳細は [Wiki](https://github.com/ValveSoftware/openvr/wiki/IVROverlay::SetOverlayTextureBounds) を参照）
+正しい向きに直す方法は色々ありますが、今回は OpenVR の [SetOverlayTextureBounds()](https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.CVROverlay.html#Valve_VR_CVROverlay_SetOverlayTextureBounds_System_UInt64_Valve_VR_VRTextureBounds_t__) でテクスチャの V 軸を逆にしてオーバーレイへ割り当てることで上下を反転させます。（詳細は [Wiki](https://github.com/ValveSoftware/openvr/wiki/IVROverlay::SetOverlayTextureBounds) を参照）
 
 `SetOverlayTextureBounds()` はテクスチャを表示する範囲を UV 座標で指定する関数ですが、上下を反転させるためにも使えます。デフォルトでは **vMin = 0, vMax = 1** ですが、縦方向を逆にするため **vMin = 1, vMax = 0** に設定します。
 

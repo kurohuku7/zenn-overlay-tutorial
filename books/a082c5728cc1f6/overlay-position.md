@@ -127,7 +127,7 @@ private void Start()
 第 1 引数は**オーバーレイハンドル**です。
 
 第 2 引数の`ETrackingUniverseOrigin.TrackingUniverseStanding` は、**プレイスペースの床の中心を原点として表示位置を指定する**ことを表しています。
-例えば `ETrackingUniverseOrigin.TrackingUniverseSeated` を指定すると、座ってプレイするユーザ向けに、ユーザがリセットした位置が基準となります。
+他には `ETrackingUniverseOrigin.TrackingUniverseSeated` を指定すると、座ってプレイするユーザ向けに、ユーザがリセットした位置が基準となります。
 
 第 3 引数の `ref matrix` は**変換行列**の参照です。
 
