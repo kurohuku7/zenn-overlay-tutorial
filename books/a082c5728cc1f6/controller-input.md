@@ -8,7 +8,7 @@ free: false
 ![](/images/3sec-display.gif)
 
 
-Unity で VR のコントローラの入力を取る方法は色々ありますが、ここでは [OpenVR の Input API (SteamVR Input)](https://github.com/ValveSoftware/openvr/wiki/SteamVR-Input) を使った入力方法で作ってみます。
+Unity で VR のコントローラの入力を取る方法は色々あるため、お好みの方法で実装して頂ければ大丈夫ですが、今回は折角なので [OpenVR の Input API (SteamVR Input)](https://github.com/ValveSoftware/openvr/wiki/SteamVR-Input) を使った入力方法で作ってみます。
 
 ## 事前設定
 SteamVR の **Setting** を開きます。
