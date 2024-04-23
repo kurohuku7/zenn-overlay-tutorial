@@ -317,7 +317,8 @@ OnMouseEnter、OnMouseLeave、OnDrag なども、上の 3 つを組み合わせ�
 スライダーなどを作ろうとすると Unity UI のみで作るよりも、少し手間がかかります。
 
 :::details そこを何とかならないでしょうか？
-ドラッグ＆ドロップで構築できる SteamVR ダッシュボード用 UI アセットを Unity Asset Store で販売予定です。公開時は [@kurohuku7](https://twitter.com/kurohuku7) で通知するので、もしご興味があればフォローしておいて頂けるとありがたいです。
+ドラッグ＆ドロップで構築できる SteamVR ダッシュボード用 UI アセットを Unity Asset Store で販売中です。
+https://assetstore.unity.com/packages/tools/gui/ovrle-ui-dashboard-ui-kit-for-steamvr-270636
 https://youtu.be/JHFiPjIXEsE
 :::
 
