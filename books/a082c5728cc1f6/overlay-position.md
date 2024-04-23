@@ -6,7 +6,7 @@ free: false
 
 ## オーバーレイのサイズ変更
 オーバーレイの大きさは [SetOverlayWidthInMeters()](https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.CVROverlay.html#Valve_VR_CVROverlay_SetOverlayWidthInMeters_System_UInt64_System_Single_) で設定します。（詳細は [Wiki](https://github.com/ValveSoftware/openvr/wiki/IVROverlay::SetOverlayWidthInMeters) を参照）
-m 単位で幅を指定します。高さは画像のアスペクト比に合わせて自動的に計算されます。デフォルトは 1 m です。
+m 単位で幅を指定します。デフォルトは 1 m です。高さは画像のアスペクト比に合わせて自動的に計算されます。
 試しに 0.5 m に変更してみます。
 
 ```diff cs:WatchOverlay.cs
