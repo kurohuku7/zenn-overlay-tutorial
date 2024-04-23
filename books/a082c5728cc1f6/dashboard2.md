@@ -243,7 +243,7 @@ Hierarchy の `Dashboard > Canvas > LeftHandButton` オブジェクトを選択�
 OpenVR 側のイベントと Unity 側のイベントは別になっているので、ダッシュボードオーバーレイがクリックされたときに、OpenVR から Unity へイベントを繋ぎこむ必要があります。
 
 まず、OpenVR 側でダッシュボードのボタンがクリックされたイベントを取得します。
-オーバーレイのイベントは `PollNextOverlayEvent()` を使ったポーリングで検出します。（詳細は [Wiki](https://github.com/ValveSoftware/openvr/wiki/IVROverlay::PollNextOverlayEvent) をn参照）
+オーバーレイのイベントは `PollNextOverlayEvent()` を使ったポーリングで検出します。（詳細は [Wiki](https://github.com/ValveSoftware/openvr/wiki/IVROverlay::PollNextOverlayEvent) を参照）
 
 `Update()` 内で `PollNextOverlayEvent()` を使ってダッシュボードオーバーレイで発生したイベントを監視します。
 指定したオーバーレイでイベントが発生していれば、`PollNextOverlayEvent()` の戻り値が `true` になり、発生したイベントを一つ取り出されます。
