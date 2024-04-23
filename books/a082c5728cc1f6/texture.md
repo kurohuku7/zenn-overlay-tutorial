@@ -339,7 +339,7 @@ private void Start()
 
 :::details DirectX 以外に対応させる場合
 このチュートリアルでは、DirectX を前提としているため、必ず上下を反転させています。
-他の API に対応させる場合は、上の**DirectX 以外に対応させる場合**に書いた通り `graphicsDeviceType` を参照して「OpenVR なら反転させない」といった分岐を作成してください。
+他の API に対応させる場合は、上の**DirectX 以外に対応させる場合**に書いた通り `graphicsDeviceType` を参照して「OpenGL なら反転させない」といった分岐を作成してください。
 :::
 
 
