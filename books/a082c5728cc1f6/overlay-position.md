@@ -66,7 +66,7 @@ private void Start()
 ### 変換行列の作成
 オーバーレイの位置は、変換行列として指定します。プレイエリアの原点など、変形の基準となる座標と、指定した変換行列の積によって表示位置が決まります。変換行列は [HmdMatrix34_t](https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.HmdMatrix34_t.html) 型を使用します。
 
-SteamVR Plugin のユーティリティに `Vector3` の座標と `Quaternion` の回転から、変換行列を作成するユーティリティ `SteamVR_Utils.RigidTransform.ToHmdMatrix34()` が入っているので、今回はこちらを使用します。
+SteamVR Plugin に `Vector3` の座標と `Quaternion` の回転から、変換行列を作成するユーティリティ `SteamVR_Utils.RigidTransform.ToHmdMatrix34()` が入っているので、今回はこちらを使用します。
 ```diff cs:WatchOverlay.cs
 private void Start()
 {
