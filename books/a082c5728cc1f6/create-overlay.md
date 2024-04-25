@@ -76,7 +76,7 @@ void Start()
 オーバーレイ関連のエラー内容は [EVROverlayError](https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.EVROverlayError.html) で定義されています。
 
 ## オーバーレイのクリーンアップ
-作成したオーバーレイを、アプリケーション終了時に破棄するコードを追加します。
+アプリケーション終了時にオーバーレイを破棄するコードを追加します。
 
 ### overlayHandle を移動
 `overlayHandle` を `Start()` 内から、クラスのメンバ変数に移動します。
