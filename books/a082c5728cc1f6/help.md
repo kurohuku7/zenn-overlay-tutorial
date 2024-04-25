@@ -21,7 +21,7 @@ Wiki に書かれていない詳細な情報は C++ のヘッダファイルに�
 https://github.com/ValveSoftware/openvr/issues
 
 ## SteamVR Unity Plugin リポジトリ
-Unity 向けのユーティリティが入っていたりします。
+Unity 用のプラグインです。Unity 向けの便利なユーティリティが入っています。
 https://github.com/ValveSoftware/steamvr_unity_plugin
 
 こちらがドキュメントです。
