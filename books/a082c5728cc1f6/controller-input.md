@@ -443,7 +443,7 @@ private void Update()
 ```
 
 第 3 引数の `digitalActionSize` は `InputDigitalActionData_t` 型の構造体のサイズ（バイト数）です。
-第 4 引数は `ulRestrictToDevice` で、基本的に使わないので `OpenVR.k_ulInvalidInputValueHandl` をセットします。
+第 4 引数は `ulRestrictToDevice` で、基本的に使わないので `OpenVR.k_ulInvalidInputValueHandle` をセットします。
 
 取得結果は [InputDigitalActionData_t](https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.InputDigitalActionData_t.html) 型です。
 
