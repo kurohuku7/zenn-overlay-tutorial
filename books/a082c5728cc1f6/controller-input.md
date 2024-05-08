@@ -674,7 +674,7 @@ public class WatchOverlay : MonoBehaviour
 プログラムを実行して、Y ボタンを押したときに時計が表示されることを確認します。
 ![](/images/3sec-display.gif)
 
-## 完成
+## 完成 🎉
 これで時計アプリは完成です！
 チュートリアルはここまでなので、最後のコード整理はお任せします。
 
