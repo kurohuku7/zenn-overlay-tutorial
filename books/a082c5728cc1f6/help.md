@@ -50,12 +50,12 @@ https://youtu.be/udc1i97KPLY?si=pZ_Y5mJG2LyYVo9w
 ※下記はしっかり検証していないものもあるので、間違いを含む可能性が高めです。
 
 ### 手法1: SideBySide
-`SetOverlayFlags()` で `VROverlayFlags_SideBySide_Parallel` を指定することで、SideBySide 画像を表示できます。
-`VROverlayFlags_SideBySide_Parallel` を使用したオーバーレイは、画像の半分を左目用に、もう半分を右目用に使用することで、立体視を行います。
+`SetOverlayFlags()` で `VROverlayFlags.SideBySide_Parallel` を指定することで、SideBySide 画像を表示できます。
+`VROverlayFlags.SideBySide_Parallel` を使用したオーバーレイは、画像の半分を左目用に、もう半分を右目用に使用することで、立体視を行います。
 Unity 上で左目用と右目用のカメラを 2 つ作成して、それぞれの映像を 1 枚のテクスチャに並べて描画することで立体をオーバーレイで表示できます。
 
 ### 手法2: Stereo Panorama
-`SetOverlayFlag()` で `VROverlayFlags_StereoPanorama` を指定すると Stereo Panorama が使えます。
+`SetOverlayFlag()` で `VROverlayFlags.StereoPanorama` を指定すると Stereo Panorama が使えます。
 こちらも 1 枚の画像を左目用と右目用の領域に分けて立体視を実現できます。
 上で紹介した [Vermillion はこれで実装したらしい](https://x.com/thmsvdberg/status/1655997759160287232)です。
 
