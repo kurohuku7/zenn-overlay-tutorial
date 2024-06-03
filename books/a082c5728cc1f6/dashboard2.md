@@ -246,7 +246,7 @@ OpenVR 側のイベントと Unity 側のイベントは別になっているの
 オーバーレイのイベントは `PollNextOverlayEvent()` を使ったポーリングで検出します。（詳細は [Wiki](https://github.com/ValveSoftware/openvr/wiki/IVROverlay::PollNextOverlayEvent) を参照）
 
 `Update()` 内で `PollNextOverlayEvent()` を使ってダッシュボードオーバーレイで発生したイベントを監視します。
-指定したオーバーレイでイベントが発生していれば、`PollNextOverlayEvent()` の戻り値が `true` になり、発生したイベントを一つ取り出されます。
+指定したオーバーレイでイベントが発生していれば、`PollNextOverlayEvent()` の戻り値が `true` になり、発生したイベントが一つ取り出されます。
 全てのイベントを取り出すと、戻り値が `false` になります。
 
 `DashboardOverlay.cs` の `Update()` 内にイベントの検出処理を追加します。
