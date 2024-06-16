@@ -489,7 +489,7 @@ public class DashboardOverlay : MonoBehaviour
 
 ## サムネイルの表示
 サムネイルオーバーレイに画像を表示します。
-[画像ファイルの表示](image-file%252Emd)で使用した `SetOverlayFromFile()` と画像ファイルがあるので、それを使用します。
+[画像ファイルの表示](./image-file)で使用した `SetOverlayFromFile()` と画像ファイルがあるので、それを使用します。
 
 ```diff cs:DashboardOverlay.cs
 private void Start()
