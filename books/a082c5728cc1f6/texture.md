@@ -338,8 +338,9 @@ private void Start()
 ![](/images/flip-y-axis.jpg)
 
 :::details DirectX 以外に対応させる場合
+Unity と DirectX で V 軸の向きが異なるため反転させましたが、一方で OpenGL の UV 座標系は Unity と一致しているため、反転させる必要はありません。
 このチュートリアルでは、DirectX を前提としているため、必ず上下を反転させています。
-他の API に対応させる場合は、上の**DirectX 以外に対応させる場合**に書いた通り `graphicsDeviceType` を参照して「OpenGL なら反転させない」といった分岐を作成してください。
+DirectX 以外に対応させる場合は、上の**DirectX 以外に対応させる場合**に書いた通り `graphicsDeviceType` を参照して「OpenGL なら反転させない」といった分岐を作成してください。
 :::
 
 
