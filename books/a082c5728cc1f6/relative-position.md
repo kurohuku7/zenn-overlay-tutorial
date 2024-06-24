@@ -185,7 +185,7 @@ private void Start()
 コントローラが接続されていない場合など、取得に失敗すると `k_unTrackedDeviceIndexInvalid` が返ってきます。
 
 ### コントローラに追従させる
-左手のコントローラの取得に成功したら、コントローラにオーバーレイを追従させてみます。
+左手のコントローラの取得に成功したら、オーバーレイをコントローラに追従させてみます。
 先ほど作成した `SetOverlayTransformRelative()` を使い、HMD の代わりに、コントローラの Device Index を指定します。
 
 ```diff cs:WatchOverlay.cs
