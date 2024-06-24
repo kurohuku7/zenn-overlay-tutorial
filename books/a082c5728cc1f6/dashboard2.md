@@ -269,7 +269,7 @@ void Update()
 ```
 
 イベントは [VREvent_t](https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.VREvent_t.html) 型で取得されます。（詳細は [Wiki](https://github.com/ValveSoftware/openvr/wiki/VREvent_t) を参照）
-`uncbVREvent` は [VREvent_t](https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.VREvent_t.html) 型の構造体のサイズ（バイト数）です。
+`uncbVREvent` は `VREvent_t` 型の構造体のサイズ（バイト数）です。
 
 
 ## クリックイベントの取得
