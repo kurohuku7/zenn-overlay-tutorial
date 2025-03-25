@@ -4,6 +4,7 @@ free: false
 ---
 
 ## key と name の準備
+
 オーバーレイの作成時に `key` と `name` の 2 つの文字列を設定します。
 `key` はオーバーレイを識別するときに使われる一意な文字列です。
 `name` は表示用の任意の文字列です。
@@ -20,6 +21,7 @@ void Start()
 ```
 
 ## オーバーレイハンドルの準備
+
 オーバーレイハンドルを保存する変数を作成します。
 ファイルをファイルハンドルで操作するように、オーバーレイはオーバーレイハンドルで操作します。
 
@@ -37,6 +39,7 @@ void Start()
 初期値の [OpenVR.k_ulOverlayHandleInvalid](https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.OpenVR.html?q=k_ulOverlayHandleInvalid#Valve_VR_OpenVR_k_ulOverlayHandleInvalid) はオーバーレイが作成できていないことを表しています。ハンドルは `ulong` 型です。
 
 ## オーバーレイの作成とハンドルの取得
+
 オーバーレイの作成には [CreateOverlay()](https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.CVROverlay.html#Valve_VR_CVROverlay_CreateOverlay_System_String_System_String_System_UInt64__) を使います。（詳細は [Wiki](https://github.com/ValveSoftware/openvr/wiki/IVROverlay::CreateOverlay) を参照）
 先ほど作成した `key`, `name` と `overlayHandle` の参照を引数として渡します。
 
@@ -56,7 +59,9 @@ void Start()
 戻り値はオーバーレイ作成時のエラー情報です。
 
 ## エラー処理
+
 オーバーレイの作成に失敗したときのエラー処理を追加します。
+
 ```diff cs:WatchOverlay.cs
 void Start()
 {
@@ -72,13 +77,16 @@ void Start()
 +   }
 }
 ```
+
 エラーがなければ `EVROverlayError.None` が返ります。
 オーバーレイ関連のエラー内容は [EVROverlayError](https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.EVROverlayError.html) で定義されています。
 
 ## オーバーレイのクリーンアップ
+
 アプリケーション終了時にオーバーレイを破棄するコードを追加します。
 
 ### overlayHandle を移動
+
 `overlayHandle` を `Start()` 内から、クラスのメンバ変数に移動します。
 
 ```diff cs:WatchOverlay.cs
@@ -105,6 +113,7 @@ public class WatchOverlay : MonoBehaviour
 ```
 
 ### オーバーレイの破棄
+
 オーバーレイの破棄に使用するのは [DestroyOverlay()](https://valvesoftware.github.io/steamvr_unity_plugin/api/Valve.VR.CVROverlay.html#Valve_VR_CVROverlay_DestroyOverlay_System_UInt64_) です。（詳細は [Wiki](https://github.com/ValveSoftware/openvr/wiki/IVROverlay::DestroyOverlay) を参照）
 `OnApplicationQuit()` を作成して、オーバーレイを破棄するコードを追加します。
 
@@ -151,6 +160,7 @@ public class WatchOverlay : MonoBehaviour
 https://docs.unity3d.com/Manual/ExecutionOrder.html
 
 ### オーバーレイの確認
+
 オーバーレイが作成できたか確認してみましょう。
 SteamVR に同梱されている **Overlay Viewer** を使うと、作成されたオーバーレイを確認できます。
 
@@ -174,7 +184,7 @@ SteamVR のウィンドウのメニューから **Developer > Overlay Viewer** �
 
 :::message
 Overlay Viewer は SteamVR のインストールディレクトリに入っています。
-`C:\Program Files (x86)\Steam\steamapps\common\SteamVR\bin\win32\overlay_viewer.exe`
+`C:\Program Files (x86)\Steam\steamapps\common\SteamVR\bin\win64\overlay_viewer.exe`
 
 開発中は何度も起動することになるので、ショートカットを作成しておくと便利です。
 :::
@@ -182,6 +192,7 @@ Overlay Viewer は SteamVR のインストールディレクトリに入って�
 ## コード整理
 
 ### オーバーレイの作成
+
 オーバーレイの作成は `CreateOverlay()` という関数を作って分けておきます。
 `key` と `name` を受け取って、オーバーレイハンドルを返します。
 関数に分ける際に、変数名を変えている部分があるので注意してください。
@@ -221,7 +232,9 @@ public class WatchOverlay : MonoBehaviour
 ```
 
 ### オーバーレイの破棄
+
 同様に `DestroyOverlay()` という関数に分けておきます。
+
 ```diff cs:WatchOverlay.cs
 public class WatchOverlay : MonoBehaviour
 {
@@ -258,6 +271,7 @@ public class WatchOverlay : MonoBehaviour
 ```
 
 ## 最終的なコード
+
 ```cs:WatchOverlay.cs
 using UnityEngine;
 using Valve.VR;
@@ -272,7 +286,7 @@ public class WatchOverlay : MonoBehaviour
         InitOpenVR();
         overlayHandle = CreateOverlay("WatchOverlayKey", "WatchOverlay");
     }
-    
+
     private void OnApplicationQuit()
     {
         DestroyOverlay(overlayHandle);
