@@ -24,7 +24,7 @@ var leftControllerIndex = OpenVR.System.GetTrackedDeviceIndexForControllerRole(E
 ※ deprecated とはなっていますが、実際には OpenVR のコードの内でも使われているので、個人的にはこのままでも問題ないとは思っています。
 
 参考
-https://github.com/ValveSoftware/openvr/blob/master/headers/openvr.h
+[https://github.com/ValveSoftware/openvr/blob/master/headers/openvr.h](https://github.com/ValveSoftware/openvr/blob/master/headers/openvr.h)
 
 # Unity Project 作成
 
