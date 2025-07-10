@@ -3,7 +3,7 @@ title: "GetTrackedDeviceIndexForControllerRole() を使わずに Device Index �
 emoji: "🙉" # アイキャッチとして使われる絵文字（1文字だけ）
 type: "tech" # tech: 技術記事 / idea: アイデア記事
 topics: ["steamvr", "openvr", "vr"] # タグ。["markdown", "rust", "aws"]のように指定する
-published: false # 公開設定（falseにすると下書き）
+published: true # 公開設定（falseにすると下書き）
 ---
 
 # 概要
@@ -12,7 +12,9 @@ published: false # 公開設定（falseにすると下書き）
 - 他の方法でコントローラの Device Index を取りたい人向け
 - SteamVR Input (IVRInput) の Pose アクションからコントローラの Device Index を取得する
 
-# 変更するコード例
+# deprecated になっている関数
+
+[以前作成したチュートリアル](https://zenn.dev/kurohuku/books/a082c5728cc1f6/viewer/relative-position)で
 
 ```cs
 var leftControllerIndex = OpenVR.System.GetTrackedDeviceIndexForControllerRole(ETrackedControllerRole.LeftHand);
@@ -20,6 +22,9 @@ var leftControllerIndex = OpenVR.System.GetTrackedDeviceIndexForControllerRole(E
 
 のように GetTrackedDeviceIndexForControllerRole() でコントローラの Device Index を取得しているのですが、このメソッドが header ファイル上のコメントで deprecated とされているため、IVRInput(SteamVR Input) を使って、Device Index を取得する方法です。
 ※ deprecated とはなっていますが、実際には OpenVR のコードの内でも使われているので、個人的にはこのままでも問題ないとは思っています。
+
+参考
+https://github.com/ValveSoftware/openvr/blob/master/headers/openvr.h
 
 # Unity Project 作成
 
