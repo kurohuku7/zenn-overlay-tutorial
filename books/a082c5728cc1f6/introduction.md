@@ -3,6 +3,8 @@ title: "はじめに"
 free: false
 ---
 
+これは kurohuku が VR 酔い対策ツール [OVR Locomotion Effect](https://store.steampowered.com/app/1393780/OVR_Locomotion_Effect__AntiVR_Sickness/) や、ダッシュボード UI アセット [OVRLE UI](https://assetstore.unity.com/packages/tools/gui/ovrle-ui-dashboard-ui-kit-for-steamvr-270636) の開発から得たオーバーレイアプリ開発の知見を体系的にまとめたものです。
+
 ## 作るもの
 
 このチュートリアルでは、サンプルとして VR ゲーム内で使用できる簡単な腕時計のオーバーレイアプリを作ります。
@@ -45,6 +47,7 @@ https://github.com/kurohuku7/zenn-overlay-tutorial
 
 ## Dashboard UI ライブラリ
 
-筆者が開発した Overlay ダッシュボード UI ライブラリ [OVRLE UI](https://assetstore.unity.com/packages/tools/gui/ovrle-ui-dashboard-ui-kit-for-steamvr-270636) を Asset Store で販売中です。もしダッシュボード UI 作成にお困りの方がいれば、ご利用頂けるとありがたいです！
+筆者が開発した Overlay ダッシュボード UI ライブラリ [OVRLE UI](https://assetstore.unity.com/packages/tools/gui/ovrle-ui-dashboard-ui-kit-for-steamvr-270636) を Asset Store で販売中です！
+オーバーレイツールの UI をドラッグアンドドロップで簡単に構築できるので、ぜひお試し下さい。
 
 [![](/images/ovrle-ui.png)](https://assetstore.unity.com/packages/tools/gui/ovrle-ui-dashboard-ui-kit-for-steamvr-270636)
