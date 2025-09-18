@@ -3,7 +3,7 @@ summary: |-
   Unity で OpenVR API を使った SteamVR オーバーレイアプリを開発するためのチュートリアルです。
   オーバーレイアプリは VR ゲームと同時に起動することができるため、便利ツールの作成にぴったりです。
   このチュートリアルでは、腕時計アプリの開発を通して、SteamVR オーバーレイアプリの開発方法を紹介します。
-topics: ["OpenVR", "SteamVR", "Unity", "VR", "C#"]
+topics: ["OpenVR", "SteamVR", "Unity", "VR", "csharp"]
 published: true
 price: 0
 allow_override: true
